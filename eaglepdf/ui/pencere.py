@@ -8,7 +8,7 @@ from PySide6.QtGui import QAction, QActionGroup, QIntValidator, QKeySequence
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QFileDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QSpinBox, QSplitter,
-    QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit,
+    QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit, QApplication, QProgressDialog,
 )
 
 from .. import APP_NAME, PAKET_ADI
@@ -21,6 +21,7 @@ from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
 from .ozellikler_penceresi import OzelliklerPenceresi
+from .toplu_yazdir import TopluYazdirPenceresi, toplu_yazdir
 from .ocr_arayuzu import OcrArayuzu
 from .duzenleme_arayuzu import DuzenlemeArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
@@ -167,6 +168,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.e_kaydet = self._eylem("Kaydet", self.kaydet, "Ctrl+S", "Açık dosyanın üzerine yazar (onay ister)")
         self.e_farkli = self._eylem("Farklı Kaydet…", self.farkli_kaydet, "Ctrl+Shift+S", simge="kaydet")
         self.e_yazdir = self._eylem("Yazdır…", self.yazdir, "Ctrl+P", simge="yazdir")
+        self.e_toplu_yazdir = self._eylem("Toplu Yazdır…", self.toplu_yazdir_ac, simge="yazdir")
         self.e_ozellik = self._eylem("Belge Özellikleri…", self.ozellikleri_goster)
         self.e_ayarlar = self._eylem("Ayarlar…", self.ayarlar_ac, "Ctrl+,")
         self.e_kapat = self._eylem("Kapat", self.kapat, "Ctrl+W")
@@ -179,6 +181,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             dosya.addAction(e)
         dosya.addSeparator()
         dosya.addAction(self.e_yazdir)
+        dosya.addAction(self.e_toplu_yazdir)
         dosya.addAction(self.e_ozellik)
         dosya.addSeparator()
         dosya.addAction(self.e_ayarlar)
@@ -716,6 +719,56 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             return 0
         self.statusBar().showMessage(f"{adet} sayfa yazıcıya gönderildi.", 5000)
         return adet
+
+    def toplu_yazdir_ac(self):
+        d = TopluYazdirPenceresi(str(self.ayarlar.value("son_klasor", "")), self)
+        if self.belge and self.belge.yol:
+            d.dosya_ekle([str(self.belge.yol)])
+        if not d.exec():
+            return
+        yazici = QPrinter(QPrinter.HighResolution)
+        pencere = QPrintDialog(yazici, self)
+        pencere.setWindowTitle("Toplu Yazdır — yazıcı ve ayarlar (tüm dosyalara uygulanır)")
+        if not pencere.exec():
+            return
+        self.toplu_yazdir_calistir(d.yollar(), yazici, d.aralik.text())
+
+    def toplu_yazdir_calistir(self, yollar, yazici, aralik="", parola_sor=None):
+        """Dosyaları yazdırır, ilerleme gösterir, sonucu özetler (pencere ve testler ortak kullanır)."""
+        ilerleme = QProgressDialog("Dosyalar yazıcıya gönderiliyor…", "İptal", 0, len(yollar), self)
+        ilerleme.setWindowTitle("Toplu Yazdır")
+        ilerleme.setMinimumDuration(0)
+        ilerleme.setAutoClose(False)
+        ilerleme.setAutoReset(False)
+
+        def geri(n, toplam):
+            ilerleme.setValue(n)
+            ilerleme.setLabelText(f"Dosyalar yazıcıya gönderiliyor… ({min(n + 1, toplam)}/{toplam})")
+            QApplication.processEvents()
+            return ilerleme.wasCanceled()
+
+        def parola(yol):
+            p, tamam = QInputDialog.getText(self, "Parola Gerekli", f"{Path(yol).name} parolayla korunuyor.\nParolayı girin "
+                                            "(boş bırakırsanız dosya atlanır):", QLineEdit.Password)
+            return p if tamam else None
+
+        try:
+            sonuc = toplu_yazdir(yollar, yazici, aralik, parola_sor or parola, geri)
+        finally:
+            ilerleme.close()
+        tamam = [s for s in sonuc if s.tamam]
+        sayfa = sum(s.sayfa for s in tamam)
+        atlanan = len(yollar) - len(sonuc)
+        satir = f"{len(tamam)} dosya, {sayfa} sayfa yazıcıya gönderildi."
+        sorunlu = [s for s in sonuc if not s.tamam]
+        if sorunlu or atlanan:
+            ayrinti = "\n".join(f"• {Path(s.yol).name}: {s.hata}" for s in sorunlu)
+            if atlanan:
+                ayrinti += f"\n• {atlanan} dosya iptal nedeniyle yazdırılmadı."
+            QMessageBox.warning(self, "Toplu Yazdır", f"{satir}\n\nSorun olanlar:\n{ayrinti}")
+        else:
+            self.statusBar().showMessage(satir, 6000)
+        return sonuc
 
     # --- diğer ---
     def ozellikleri_goster(self):

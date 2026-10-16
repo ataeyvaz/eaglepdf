@@ -20,6 +20,9 @@ Araç çubuğundaki iki araçtan biri her zaman açıktır:
 - **El Aracı:** sayfayı fareyle tutup sürükleyerek kaydırırsınız.
 - **Metin Seçme Aracı:** metnin üzerinde sürükleyerek kelime kelime seçersiniz; seçim sayfalar arasında da sürebilir. **Ctrl+C** (Düzen → Seçili Metni Kopyala) seçili metni panoya alır, **Esc** seçimi kaldırır. Taranmış (resim) sayfalarda metin yoktur, seçilemez; bunun için ileride OCR eklenecek.
 
+<!-- konu: toplu-yazdirma | Toplu Yazdırma -->
+**Dosya → Toplu Yazdır…** birden çok PDF'i art arda yazdırır. Açık belge varsa listeye otomatik eklenir; **Dosya Ekle…** ile istediğiniz kadar ekleyin, sürükleyerek sırayı değiştirin. İsterseniz bir **sayfa aralığı** yazın (örn. `1-2, 5`); aralık her dosyaya uygulanır, dosyada olmayan sayfalar atlanır. **Yazıcı Seç ve Yazdır…** ile yazıcıyı ve ayarlarını (kâğıt, kopya, renk) bir kez seçersiniz; hepsine uygulanır. Her dosya yazıcı kuyruğunda ayrı bir iş olarak görünür. Parolalı dosyada parola sorulur (boş bırakırsanız o dosya atlanır). Bir dosyada sorun olursa diğerleri yazdırılmaya devam eder; sonunda sorunlu dosyalar listelenir. İptal ederseniz henüz gönderilmemiş dosyalar yazdırılmaz.
+
 <!-- konu: ozellikler | Belge Özellikleri -->
 **Dosya → Belge Özellikleri…** belgenin başlık, yazar, konu ve anahtar sözcüklerini düzenlemenizi sağlar; oluşturan program, tarihler, sayfa sayısı ve dosya boyutu salt okunur görünür. Değişiklik belgeyi “değişti” yapar, **Geri Al** ile döndürülebilir ve kaydedince dosyaya yazılır. **Tüm bilgileri temizle** düğmesi başlık, yazar, tarihler, üretici ve XMP üst verisini siler; belgeyi paylaşmadan önce kişisel bilgileri kaldırmak için kullanışlıdır. (Belge dijital imzalıysa değişiklik kaydedilince imza geçersiz olur.)
 
