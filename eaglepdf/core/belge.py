@@ -7,6 +7,7 @@ Sayfa numaraları kullanıcıya 1'den, bu modülde 0'dan başlar.
 
 import os
 import re
+import secrets
 import tempfile
 from pathlib import Path
 
@@ -17,8 +18,11 @@ from .duzenleme import DuzenlemeIslemleri
 from .ekaciklama import EkAciklamaIslemleri
 from .gecmis import Gecmis, belgeyi_degistir, geri_alinabilir
 from .hatalar import BelgeHatasi, ParolaGerekli
+from . import xmp as xmp_modulu
 from .ocr import OcrIslemleri
 
+_TUM_IZIN_BITLERI = (pymupdf.PDF_PERM_PRINT | pymupdf.PDF_PERM_MODIFY | pymupdf.PDF_PERM_COPY | pymupdf.PDF_PERM_ANNOTATE
+                     | pymupdf.PDF_PERM_FORM | pymupdf.PDF_PERM_ACCESSIBILITY | pymupdf.PDF_PERM_ASSEMBLE | pymupdf.PDF_PERM_PRINT_HQ)
 SAYFA_BOYUTLARI = {"A3": (842, 1191), "A4": (595, 842), "A5": (420, 595), "Letter": (612, 792), "Legal": (612, 1008)}
 
 
@@ -69,6 +73,10 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         self._gecmis = Gecmis()
         self.yol = yol
         self.degisti = False
+        self._parola: str | None = None   # parolayla açıldıysa; kayıtta korumayı sürdürmek için
+        self._yetki = 0                   # authenticate sonucu: 2 açma, 4 sahip, 6 ikisi
+        self._izinler = -1                # açılışta okunan izin bitleri
+        self._koru = False                # yalnızca kayıt sırasında: bu yazımda şifrele
 
     # --- açma ---
     @classmethod
@@ -80,14 +88,38 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
             doc = pymupdf.open(yol)
         except Exception as hata:
             raise BelgeHatasi(f"PDF açılamadı: {hata}") from None
+        yetki = 0
         if doc.needs_pass:
-            if parola is None or not doc.authenticate(parola):
+            yetki = doc.authenticate(parola) if parola is not None else 0
+            if not yetki:
                 doc.close()
                 raise ParolaGerekli("Bu belge parolayla korunuyor." if parola is None else "Parola yanlış.")
         if not doc.is_pdf:
             doc.close()
             raise BelgeHatasi("Bu dosya bir PDF belgesi değil.")
-        return cls(doc, yol)
+        belge = cls(doc, yol)
+        if yetki:
+            belge._parola, belge._yetki, belge._izinler = parola, yetki, doc.permissions
+        return belge
+
+    @property
+    def parola_korunur(self) -> bool:
+        """Belge parolayla açıldı: Kaydet parolayı (AES-256) sürdürür."""
+        return self._parola is not None
+
+    @property
+    def sahip_yetkisi_var(self) -> bool:
+        return self._yetki in (4, 6)
+
+    @property
+    def izinler_kilitli(self) -> bool:
+        """Parolalı belgede bazı izinler (yazdırma, kopyalama, düzenleme…) kapalı."""
+        return self._parola is not None and (self._izinler & _TUM_IZIN_BITLERI) != _TUM_IZIN_BITLERI
+
+    @property
+    def koruma_dusecek(self) -> bool:
+        """Belge şifreli ama parolası bilinmiyor (boş açma parolası + sahip kısıtları): kayıtta kısıtlar düşer."""
+        return self._parola is None and bool(self._doc.metadata.get("encryption"))
 
     @classmethod
     def yeni(cls, sayfa_sayisi: int = 1, boyut: str = "A4") -> "Belge":
@@ -142,6 +174,13 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
             if deger is not None:
                 yeni[self.DUZENLENEBILIR_OZELLIKLER[ad]] = deger.strip()
         self._doc.set_metadata(yeni)
+        # XMP'de aynı alanlar varsa onları da güncelle (okuyucular XMP'yi Info'ya tercih edebilir)
+        xmp = self._doc.get_xml_metadata()
+        if xmp and xmp.strip():
+            degerler = {k: v for k, v in (("baslik", baslik), ("yazar", yazar), ("konu", konu), ("anahtar", anahtar)) if v is not None}
+            yeni_xmp, adet = xmp_modulu.guncelle(xmp, degerler)
+            if adet:
+                self._doc.set_xml_metadata(yeni_xmp)
 
     @geri_alinabilir
     def ozellikleri_temizle(self):
@@ -264,9 +303,11 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         return True
 
     # --- kayıt ---
-    def kaydet(self, hedef, uzerine_yaz: bool = False):
-        """Geçici dosyaya yaz → yerine koy. Kaynağın üzerine yazmak açık onay (`uzerine_yaz`) ister."""
+    def kaydet(self, hedef, uzerine_yaz: bool = False, parolayi_koru: bool = True):
+        """Geçici dosyaya yaz → yerine koy. Kaynağın üzerine yazmak açık onay (`uzerine_yaz`) ister.
+        Belge parolayla açıldıysa `parolayi_koru` ile aynı parola(lar) ve izinlerle şifrelenir; False → parolasız yazar."""
         hedef = Path(hedef)
+        self._koru = bool(parolayi_koru and self._parola is not None)
         if self.yol and hedef.resolve() == self.yol.resolve() and not uzerine_yaz:
             raise BelgeHatasi("Açık dosyanın üzerine yazmak için onay gerekir; “Farklı Kaydet” kullanın.")
         if self.yol and hedef.resolve() == self.yol.resolve():
@@ -276,6 +317,8 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
             finally:
                 if self._doc.is_closed:
                     self._doc = pymupdf.open(hedef)
+                    if self._doc.needs_pass:  # şifreli yazıldıysa aynı parolayla yeniden aç
+                        self._doc.authenticate(self._parola)
         else:
             _gecici_yaz(self._motoru_yaz, hedef)
             self.yol = hedef
@@ -290,7 +333,15 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
                 kopya.subset_fonts()
             except Exception:
                 pass  # yazı tipi küçültülemezse tam yazı tipiyle kaydedilir
-            kopya.save(hedef, garbage=3, deflate=True)
+            if self._koru:
+                kullanici = self._parola if self._yetki in (2, 6) else ""
+                # Yalnızca açma parolası biliniyorsa ve kısıtlar varsa sahip parolası bilinmeyen rastgele bir değer olur:
+                # aynı parola sahip de olsaydı açma parolasını bilen herkes kısıtları aşardı.
+                sahip = self._parola if self.sahip_yetkisi_var or not self.izinler_kilitli else secrets.token_urlsafe(24)
+                kopya.save(hedef, garbage=3, deflate=True, encryption=pymupdf.PDF_ENCRYPT_AES_256, user_pw=kullanici,
+                           owner_pw=sahip, permissions=self._izinler)
+            else:
+                kopya.save(hedef, garbage=3, deflate=True)
         finally:
             kopya.close()
 

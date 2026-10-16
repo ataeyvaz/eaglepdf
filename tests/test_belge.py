@@ -163,3 +163,39 @@ def test_pdf_tarihi():
     assert Belge.pdf_tarihi("D:20261016233047+03'00'") == "16.10.2026 23:30"
     assert Belge.pdf_tarihi("D:2026") == "01.01.2026"
     assert Belge.pdf_tarihi("") == "" and Belge.pdf_tarihi("garip") == "garip"
+
+
+XMP_ORNEK = """<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+<rdf:Description rdf:about="" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+ xmlns:xmpRights="http://ns.adobe.com/xap/1.0/rights/" pdf:Keywords="eski, anahtar">
+<dc:title><rdf:Alt><rdf:li xml:lang="x-default">Eski Başlık</rdf:li></rdf:Alt></dc:title>
+<dc:creator><rdf:Seq><rdf:li>Eski Yazar</rdf:li><rdf:li>İkinci Yazar</rdf:li></rdf:Seq></dc:creator>
+<xmpRights:Marked>True</xmpRights:Marked>
+</rdf:Description></rdf:RDF></x:xmpmeta>
+<?xpacket end="w"?>"""
+
+
+def test_ozellikler_xmp_ile_tutarli(tmp_path):
+    b = Belge.ac(pdf_yap(tmp_path / "x.pdf", 1))
+    b._doc.set_xml_metadata(XMP_ORNEK)
+    b.ozellikleri_ata(baslik="Yeni Işık", yazar="Ata", anahtar="yeni, anahtar")
+    xmp = b._doc.get_xml_metadata()
+    assert "Yeni Işık" in xmp and "Eski Başlık" not in xmp
+    assert "Ata" in xmp and "Eski Yazar" not in xmp and "İkinci Yazar" not in xmp
+    assert 'pdf:Keywords="yeni, anahtar"' in xmp and "eski, anahtar" not in xmp
+    assert "xmpRights:Marked" in xmp and "xpacket" in xmp  # başka veri ve sarmal korunur
+    b.ozellikleri_ata(baslik="")  # boş = XMP'den de silinir
+    assert "dc:title" not in b._doc.get_xml_metadata()
+    assert b.geri_al() and "Yeni Işık" in b._doc.get_xml_metadata()
+    b.kapat()
+
+
+def test_xmp_olmayan_belgeye_xmp_eklenmez_ve_bozuk_xmp_atlanir(tmp_path):
+    b = Belge.ac(pdf_yap(tmp_path / "x.pdf", 1))
+    b.ozellikleri_ata(baslik="A")
+    assert not (b._doc.get_xml_metadata() or "").strip()
+    b._doc.set_xml_metadata("<bozuk")
+    b.ozellikleri_ata(baslik="B")  # hata vermez
+    assert b.ozellikler()["Başlık"] == "B"
+    b.kapat()

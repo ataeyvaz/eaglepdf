@@ -107,3 +107,16 @@ def test_donusumler_taranmis_belgede_ocr_kullanir(tmp_path):
     d = docx.Document(str(donustur.pdf_word(kaynak, tmp_path / "w")))
     assert "stanbul" in "\n".join(p.text for p in d.paragraphs)
     assert kaynak.read_bytes() == once  # kaynak dosya değişmez
+
+
+def test_pptx_taranmis_sayfa_notlara_ocr_metni(tmp_path):
+    from pptx import Presentation
+    from eaglepdf.core import donustur
+    kaynak = tmp_path / "tara.pdf"
+    taranmis(kaynak).kapat()
+    for mod in ("duzenlenebilir", "resim"):
+        dosya = donustur.pdf_pptx(kaynak, tmp_path / mod, mod=mod)
+        slayt = Presentation(str(dosya)).slides[0]
+        assert "stanbul" in slayt.notes_slide.notes_text_frame.text
+        kutular = [sh for sh in slayt.shapes if sh.has_text_frame and sh.text_frame.text.strip()]
+        assert kutular == []  # resimle çakışan ikinci metin katmanı yok

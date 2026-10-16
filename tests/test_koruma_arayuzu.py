@@ -93,3 +93,34 @@ def test_sifresiz_belgede_bilgi(pencere, tmp_path, monkeypatch):
     pencere.parola_kaldir()
     pencere.izinleri_goster()
     assert len(iletiler) == 2 and all("parolasız" in i or "korumalı değil" in i for i in iletiler)
+
+
+def test_kaydet_parolayi_korur_arayuz(pencere, tmp_path, monkeypatch):
+    b = Belge.ac(pdf_yap(tmp_path / "k.pdf", 1))
+    hedef = tmp_path / "kor.pdf"
+    koruma.parola_ekle(b, hedef, acma_parolasi="pw")
+    b.kapat()
+    from PySide6.QtWidgets import QInputDialog
+    monkeypatch.setattr(QInputDialog, "getText", staticmethod(lambda *a, **k: ("pw", True)))
+    pencere.ac(str(hedef))
+    pencere.belge._doc[0].insert_text((72, 300), "x")
+    pencere.belge.degisti = True
+    assert pencere._yaz(hedef, True)
+    assert "parola korundu" in pencere.statusBar().currentMessage()
+    doc = pymupdf.open(hedef)
+    assert doc.needs_pass
+    doc.close()
+
+
+def test_sahip_kisitli_belgede_kayit_onayi(pencere, tmp_path, monkeypatch):
+    b = Belge.ac(pdf_yap(tmp_path / "k.pdf", 1))
+    hedef = tmp_path / "izinli.pdf"
+    koruma.parola_ekle(b, hedef, sahip_parolasi="s", izinler={"duzenle": False})
+    b.kapat()
+    pencere.ac(str(hedef))
+    assert pencere.belge.koruma_dusecek
+    sorular = []
+    monkeypatch.setattr(QMessageBox, "question",
+                        staticmethod(lambda *a, **k: sorular.append(a[2]) or QMessageBox.Cancel))
+    assert pencere._yaz(tmp_path / "cikti.pdf", False) is False and "kısıtlar kalkacak" in sorular[0]
+    assert not (tmp_path / "cikti.pdf").exists()

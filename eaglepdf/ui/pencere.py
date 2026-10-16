@@ -437,17 +437,29 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         return self._yaz(yol, uzerine_yaz=bool(self.belge.yol and yol.resolve() == self.belge.yol.resolve()))
 
     def _yaz(self, yol: Path, uzerine_yaz: bool) -> bool:
-        if not self._imzali_kayit_onayi():
+        if not self._imzali_kayit_onayi() or not self._koruma_dusme_onayi():
             return False
         try:
             self.belge.kaydet(yol, uzerine_yaz=uzerine_yaz)
         except (BelgeHatasi, OSError) as h:
             QMessageBox.warning(self, APP_NAME, f"Kaydedilemedi:\n{h}")
             return False
-        self.statusBar().showMessage(f"Kaydedildi: {yol}", 5000)
+        ek = ""
+        if self.belge.parola_korunur:
+            ek = " (parola" + (" ve izin kısıtları" if self.belge.izinler_kilitli else "") + " korundu)"
+        self.statusBar().showMessage(f"Kaydedildi: {yol}{ek}", 5000)
         self._son_ekle(str(yol))
         self._durumu_guncelle()
         return True
+
+    def _koruma_dusme_onayi(self) -> bool:
+        """Parolası bilinmeyen (yalnızca sahip kısıtlı) belgede kısıtlar kayıtta kalkar; kullanıcıya sorulur."""
+        if not self.belge or not self.belge.koruma_dusecek:
+            return True
+        return QMessageBox.question(
+            self, APP_NAME, "Bu belgede sahip parolasıyla konmuş kısıtlar (yazdırma, kopyalama, düzenleme…) var. Sahip parolası "
+                            "bilinmediği için kaydedilen dosyada bu kısıtlar kalkacak.\nDevam edilsin mi?",
+            QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel) == QMessageBox.Yes
 
     def _kapatmaya_izin(self) -> bool:
         if not self.belge or not self.belge.degisti:

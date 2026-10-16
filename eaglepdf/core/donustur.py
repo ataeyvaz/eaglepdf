@@ -151,6 +151,18 @@ def _metin_var_mi(b: Belge, liste: list[int]) -> bool:
     return any(b._doc[i].get_text().strip() for i in liste)
 
 
+def _ocr_dene(b: Belge, liste: list[int], ilerleme=None) -> set[int]:
+    """Metinsiz sayfalara (OCR kuruluysa) bellekteki kopyada OCR uygular; hata vermez. OCR ile metin bulunan sayfaları döndürür."""
+    eksik = b.metinsiz_sayfalar(liste)
+    if not eksik or not ocr.hazir_mi():
+        return set()
+    try:
+        b.aranabilir_yap(eksik, ilerleme=ilerleme)
+    except ocr.OcrIptal:
+        raise Iptal("İşlem iptal edildi.") from None
+    return {i for i in eksik if b._doc[i].get_text().strip()}
+
+
 def _metni_hazirla(b: Belge, liste: list[int], ilerleme=None):
     """Seçili sayfalarda metin yoksa (taranmış) ve OCR dil verisi kuruluysa, bellekteki kopyaya OCR metni ekler
     (kaynak dosya değişmez). Hâlâ metin yoksa anlaşılır hata verir."""
@@ -341,6 +353,7 @@ def pdf_pptx(yol, klasor, sayfalar=None, mod: str = "duzenlenebilir", dpi: int =
     b = _ac(yol, parola)
     try:
         liste = _sayfa_listesi(b, sayfalar)
+        ocr_sayfalari = _ocr_dene(b, liste, ilerleme)  # taranmış sayfalar: metin slayt notuna (kutu eklenmez: resimle çakışırdı)
         g0, y0 = b.sayfa_boyutu(liste[0])
         prs = Presentation()
         prs.slide_width, prs.slide_height = Emu(round(g0 * 12700)), Emu(round(y0 * 12700))
@@ -370,7 +383,7 @@ def pdf_pptx(yol, klasor, sayfalar=None, mod: str = "duzenlenebilir", dpi: int =
                     continue
                 satirlar = [("".join(s["text"] for s in sa["spans"]).replace("\xa0", " "), sa["spans"]) for sa in blok["lines"]]
                 metin_blogu.append("\n".join(t for t, _ in satirlar))
-                if mod != "duzenlenebilir":
+                if mod != "duzenlenebilir" or i in ocr_sayfalari:
                     continue
                 x0, yy0, x1, yy1 = (v * olcek for v in blok["bbox"])
                 kutu = slayt.shapes.add_textbox(Emu(round(x0 * 12700)), Emu(round(yy0 * 12700)),
