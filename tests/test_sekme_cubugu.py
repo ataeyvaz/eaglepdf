@@ -75,8 +75,9 @@ def test_parolali_belgede_kilit_simgesi(pencere, tmp_path, monkeypatch):
     pencere.ac(str(tmp_path / "p.pdf"))
     assert not pencere.sekmeler.tabIcon(0).isNull()
     assert "Parolayla" in pencere.sekmeler.tabToolTip(0)
-    pencere.ac(str(pdf_yap(tmp_path / "d.pdf", 1)))  # parolasız belge: simge yok
-    assert pencere.sekmeler.tabIcon(0).isNull()
+    pencere.ac(str(pdf_yap(tmp_path / "d.pdf", 1)))  # ikinci sekme, parolasız: simge yok; ilk sekme kilitli kalır
+    assert pencere.sekmeler.count() == 2
+    assert not pencere.sekmeler.tabIcon(0).isNull() and pencere.sekmeler.tabIcon(1).isNull()
 
 
 def test_cok_oturumda_tazele_ve_etkin(pencere, tmp_path):

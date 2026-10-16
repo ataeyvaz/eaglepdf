@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅, sertifikalı dijital imza ✅. **Faz 1 artıkları: ayarlar ✅, belge özellikleri ✅, toplu yazdırma ✅**; kalan tek artık: belge sekmeleri (ertelendi, §2). Testler: `.venv\Scripts\python -m pytest` → **230 geçti** (~2 dk).
+Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅, sertifikalı dijital imza ✅. **Faz 1 artıkları: ayarlar ✅, belge özellikleri ✅, toplu yazdırma ✅**; kalan tek artık: belge sekmeleri (ertelendi, §2). Testler: `.venv\Scripts\python -m pytest` → **243 geçti** (~2 dk).
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -22,7 +22,7 @@ Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅
 
 2. ~~**Koruma**~~ ✅ yapıldı (`core/koruma.py`, `ui/koruma_arayuzu.py`, testler `test_koruma*.py`). Not: açık belgenin üzerine yazılmaz, korumalı/parolasız **kopya** yazılır.
 3. ~~**Sertifikalı dijital imza**~~ ✅ yapıldı (`core/dijital_imza.py`, `ui/imza_arayuzu.py`; testler `test_dijital_imza.py`, `test_imza_arayuzu.py`). Sonra çözülecekler §7'de.
-4. Artık: **belge sekmeleri** — plan `docs/sekmeler-plani.md`, kararlar onaylandı. **Adım 1 ✅** (`ui/oturum.py` BelgeOturumu + EN_COK_SEKME; `AnaPencere.belge` property/setter, `_oturumlar`, `_etkin`; davranış aynı). **Adım 2a ✅** (sekme çubuğu görünümü: `AnaPencere.sekmeler` QTabBar, `_sekmeleri_tazele`, `_sekme_tasindi` sürükle-sırala, özel düz ✕ düğmesi `_sekme_kapat_dugmesi`, `oturum.sekme_basligi/ipucu`, kilit simgesi, ● değişti işareti; `ac()` hâlâ belgeyi değiştirir). **Sıradaki: 2b** (`ac()` yeni sekme açar / aynı dosya açıksa o sekmeye geçer; `test_parolali_belgede_kilit_simgesi` ve diğer 'ac ikinci kez' testleri buna göre güncellenir), sonra 2c (sekme değişince durumu sakla/geri yükle), 2d (sekme kapatma). (~~Ayarlar, belge özellikleri, toplu yazdırma~~ ✅) (~~Ayarlar penceresi~~ ✅)
+4. Artık: **belge sekmeleri** — plan `docs/sekmeler-plani.md`, kararlar onaylandı. **Adım 1 ✅** (`ui/oturum.py` BelgeOturumu + EN_COK_SEKME; `AnaPencere.belge` property/setter, `_oturumlar`, `_etkin`; davranış aynı). **Adım 2a ✅** (sekme çubuğu görünümü: `AnaPencere.sekmeler` QTabBar, `_sekmeleri_tazele`, `_sekme_tasindi` sürükle-sırala, özel düz ✕ düğmesi `_sekme_kapat_dugmesi`, `oturum.sekme_basligi/ipucu`, kilit simgesi, ● değişti işareti; `ac()` hâlâ belgeyi değiştirir). **Adım 2b ✅** (`ac()` her dosyayı yeni sekmede açar, açıksa o sekmeye geçer (`yeniden=True` ile diskten yeniden yükler), 8 sekme sınırı uyarısı; `_etkinlestir(sıra)` + `_durum_kaydet` sayfa/ölçeği saklar-geri yükler; sekmeye tıklayınca geçiş (`currentChanged`); `kapat()` yalnızca etkin sekmeyi kapatır ve komşuya geçer; `closeEvent` tüm değişmiş sekmeleri sorar; `_kapatmaya_izin(sıra)`; Dosya→Aç çoklu seçim; `ac()` artık mevcut belgeyi kapatmaz, `kontrol_edildi` etkisiz). Test güncellemesi: `test_parolali_belgede_kilit_simgesi` iki sekmeye göre. **Sıradaki: 2c** (sekme değişince kalan durum: arama metni/sonuçları, panel sekmesi, bekleyen yerleştirme/araç iptali, sinyal koruması, işlem sırasında geçişi engelleme), sonra 2d (✕ ile herhangi bir sekmeyi kapat, Tümünü kapat, sağ tık menüsü, kısayollar). (~~Ayarlar, belge özellikleri, toplu yazdırma~~ ✅) (~~Ayarlar penceresi~~ ✅)
 5. (İsteğe bağlı) üstbilgi/altbilgi/sayfa numarası için "kaldır"; PDFgear'ı elle açıp `docs/ozellikler.md`'deki ⚠ noktaları gözlemle.
 
 ## 3. Çalışma sistemi (her adımda)

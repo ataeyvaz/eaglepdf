@@ -20,7 +20,7 @@ from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
-from .oturum import BelgeOturumu, sekme_basligi, sekme_ipucu
+from .oturum import EN_COK_SEKME, BelgeOturumu, sekme_basligi, sekme_ipucu
 from .ozellikler_penceresi import OzelliklerPenceresi
 from .toplu_yazdir import TopluYazdirPenceresi, toplu_yazdir
 from .ocr_arayuzu import OcrArayuzu
@@ -135,6 +135,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.sekmeler.setElideMode(Qt.ElideRight)
         self.sekmeler.setUsesScrollButtons(True)
         self.sekmeler.tabMoved.connect(self._sekme_tasindi)
+        self.sekmeler.currentChanged.connect(self._sekme_secildi)
         self.sekmeler.tabCloseRequested.connect(self._sekme_kapat_istendi)
         self.sekmeler.hide()
         dikey.addWidget(self.sekmeler)
@@ -333,14 +334,26 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
 
     # --- belge açma/kapama ---
     def ac_sor(self):
-        if not self._kapatmaya_izin():
-            return
-        yol, _ = QFileDialog.getOpenFileName(self, "PDF Aç", self.ayarlar.value("son_klasor", ""), PDF_FILTRESI)
-        if yol:
-            self.ac(yol, kontrol_edildi=True)
+        yollar, _ = QFileDialog.getOpenFileNames(self, "PDF Aç", self.ayarlar.value("son_klasor", ""), PDF_FILTRESI)
+        for yol in yollar:
+            self.ac(yol)
 
-    def ac(self, yol, kontrol_edildi=False):
-        if not kontrol_edildi and not self._kapatmaya_izin():
+    def _oturum_bul(self, yol) -> int:
+        """`yol` zaten bir sekmede açıksa sırası, değilse -1."""
+        return next((i for i, o in enumerate(self._oturumlar) if o.ayni_dosya_mi(yol)), -1)
+
+    def ac(self, yol, kontrol_edildi=False, yeniden=False):
+        """Dosyayı yeni sekmede açar; zaten açıksa o sekmeye geçer.
+        `yeniden=True`: açık sekmedeki belge diskten yeniden yüklenir (kayıttan sonra gibi). `kontrol_edildi` eski
+        çağrılarla uyum için bırakıldı, artık etkisi yok (açmak mevcut belgeyi kapatmaz)."""
+        sira = self._oturum_bul(yol)
+        if sira >= 0 and not yeniden:
+            self._etkinlestir(sira)
+            self.statusBar().showMessage(f"{Path(yol).name} zaten açık; o sekmeye geçildi.", 4000)
+            return
+        if sira < 0 and len(self._oturumlar) >= EN_COK_SEKME:
+            QMessageBox.information(self, APP_NAME, f"En çok {EN_COK_SEKME} belge aynı anda açık olabilir. "
+                                                    "Yeni belge açmadan önce bir sekmeyi kapatın.")
             return
         parola = None
         while True:
@@ -354,12 +367,46 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             except BelgeHatasi as h:
                 QMessageBox.warning(self, APP_NAME, str(h))
                 return
-        self._belgeyi_kapat_sessiz()
-        self.belge = yeni
+        self._durum_kaydet()
+        if sira >= 0:   # yeniden yükleme: aynı sekmenin belgesi değişir
+            self._etkin = sira
+            self.goruntuleyici.belge_ata(None)
+            self.kucuk.belge_ata(None)
+            self.yer_imleri.belge_ata(None)
+            self._oturumlar[sira].belge.kapat()
+            self._oturumlar[sira] = BelgeOturumu(yeni)
+        else:
+            self._oturumlar.append(BelgeOturumu(yeni))
+            self._etkin = len(self._oturumlar) - 1
         self.ayarlar.setValue("son_klasor", str(Path(yol).parent))
         self._son_ekle(str(Path(yol)))
         self._belge_goster(0)
         self._acilis_yakinlastirma()
+
+    # --- sekme geçişi ---
+    def _durum_kaydet(self):
+        """Etkin oturumun görünüm durumunu (sayfa, ölçek) oturuma yazar; sekme değişmeden hemen önce çağrılır."""
+        if 0 <= self._etkin < len(self._oturumlar):
+            o = self._oturumlar[self._etkin]
+            o.gecerli_sayfa = self.goruntuleyici.gecerli_sayfa
+            o.olcek = self.goruntuleyici.olcek
+
+    def _etkinlestir(self, sira: int):
+        """`sira`daki sekmeyi etkin yapar: eskinin durumunu saklar, yeni belgeyi görüntüleyiciye bağlar, sayfa/ölçeği döndürür."""
+        if not 0 <= sira < len(self._oturumlar) or sira == self._etkin:
+            return
+        self._durum_kaydet()
+        self._etkin = sira
+        o = self._oturumlar[sira]
+        self._belge_goster(o.gecerli_sayfa)
+        if abs(self.goruntuleyici.olcek - o.olcek) > 1e-4:
+            self.goruntuleyici.olcek_ata(o.olcek)
+        self._durumu_guncelle()
+
+    def _sekme_secildi(self, sira: int):
+        """Kullanıcı sekme çubuğundan başka sekmeyi seçti."""
+        if sira != self._etkin:
+            self._etkinlestir(sira)
 
     def _acilis_yakinlastirma(self):
         secim = str(self.ayarlar.value("acilis_yakinlastirma", "genislik"))
@@ -382,19 +429,38 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._son_menusu_doldur()
         self.statusBar().showMessage("Ayarlar kaydedildi.", 3000)
 
-    def _belgeyi_kapat_sessiz(self):
-        if self.belge:
+    def _oturumu_sessiz_kapat(self, sira: int | None = None):
+        """Sekmeyi sormadan kapatır (belge kapanır); son sekmeyse boş duruma, değilse komşu sekmeye geçer."""
+        sira = self._etkin if sira is None else sira
+        if not 0 <= sira < len(self._oturumlar):
+            return
+        etkin_miydi = sira == self._etkin
+        if etkin_miydi:   # görüntüleyici belgeyi bırakmadan belge kapatılmaz
             self.goruntuleyici.belge_ata(None)
             self.kucuk.belge_ata(None)
             self.yer_imleri.belge_ata(None)
             self.aciklama_paneli.doldur([])
-            self.belge.kapat()
-            self.belge = None
-        self._sonuclar, self._sonuc_no = [], -1
+        self._oturumlar.pop(sira).belge.kapat()
+        if not self._oturumlar:
+            self._etkin = -1
+        elif etkin_miydi:
+            self._etkin = min(sira, len(self._oturumlar) - 1)   # sağdaki, yoksa soldaki komşu
+            o = self._oturumlar[self._etkin]
+            self._belge_goster(o.gecerli_sayfa)
+            if abs(self.goruntuleyici.olcek - o.olcek) > 1e-4:
+                self.goruntuleyici.olcek_ata(o.olcek)
+        elif sira < self._etkin:
+            self._etkin -= 1
+        if etkin_miydi:
+            self._sonuclar, self._sonuc_no = [], -1
+
+    def _belgeyi_kapat_sessiz(self):
+        """Etkin sekmeyi sormadan kapatır (uyumluluk adı)."""
+        self._oturumu_sessiz_kapat()
 
     def kapat(self):
         if self._kapatmaya_izin():
-            self._belgeyi_kapat_sessiz()
+            self._oturumu_sessiz_kapat()
             self._durumu_guncelle()
 
     def _belge_goster(self, sayfa: int):
@@ -541,10 +607,15 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
                             "bilinmediği için kaydedilen dosyada bu kısıtlar kalkacak.\nDevam edilsin mi?",
             QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel) == QMessageBox.Yes
 
-    def _kapatmaya_izin(self) -> bool:
-        if not self.belge or not self.belge.degisti:
+    def _kapatmaya_izin(self, sira: int | None = None) -> bool:
+        """Sekme kapatılabilir mi? Değişmişse Farklı Kaydet / Kaydetmeden Kapat / Vazgeç sorar (sekme önce etkinleştirilir,
+        kullanıcı hangi belge olduğunu görsün)."""
+        sira = self._etkin if sira is None else sira
+        if not 0 <= sira < len(self._oturumlar) or not self._oturumlar[sira].belge.degisti:
             return True
-        kutu = QMessageBox(QMessageBox.Question, APP_NAME, "Belgede kaydedilmemiş değişiklikler var.", parent=self)
+        self._etkinlestir(sira)
+        kutu = QMessageBox(QMessageBox.Question, APP_NAME, f"“{sekme_basligi(self._oturumlar[sira]).lstrip('● ')}” belgesinde "
+                           "kaydedilmemiş değişiklikler var.", parent=self)
         farkli = kutu.addButton("Farklı Kaydet…", QMessageBox.AcceptRole)
         atla = kutu.addButton("Kaydetmeden Kapat", QMessageBox.DestructiveRole)
         kutu.addButton("Vazgeç", QMessageBox.RejectRole)
@@ -554,11 +625,14 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         return kutu.clickedButton() is atla
 
     def closeEvent(self, olay):
-        if self._kapatmaya_izin():
-            self._belgeyi_kapat_sessiz()
-            olay.accept()
-        else:
-            olay.ignore()
+        """Değişmiş sekmeleri sırayla sorar; biri 'Vazgeç' derse pencere kapanmaz."""
+        for sira in range(len(self._oturumlar)):
+            if not self._kapatmaya_izin(sira):
+                olay.ignore()
+                return
+        while self._oturumlar:
+            self._oturumu_sessiz_kapat(len(self._oturumlar) - 1)
+        olay.accept()
 
     # --- son kullanılanlar ---
     def _son_liste(self) -> list[str]:
