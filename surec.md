@@ -10,7 +10,7 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Özellik haritası (`docs/ozellikler.md`) | Tüm özellikler listelensin | — | ⏳ |
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım | — | ⏳ |
 
-Son commit: (ilk commit bekliyor) · Testler: henüz yok
+Son commit: `d543144` · Testler: henüz yok
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. PDFgear özellik haritasını çıkar (REA `inspect-managed-members` çıktısı: tip/menü adları + uygulamayı elle gözlem). Çıktı: `docs/ozellikler.md`.
@@ -33,7 +33,7 @@ Son commit: (ilk commit bekliyor) · Testler: henüz yok
 - 2026-10-16: Yığın Python 3.11 + PySide6, arayüz Sözcük/Tabcel diliyle (Eagle Office ailesi) — kardeş uygulamalarla tutarlılık, ortak bilgi birikimi.
 - 2026-10-16: **Yardım → Nasıl Kullanılır menüsü** zorunlu — kullanıcı isteği.
 - 2026-10-16: Her başarılı aşamadan sonra commit kullanıcıya sorulmadan atılır — kullanıcı izni (genel kuraldaki "yalnızca isterse"nin bu proje için istisnası).
-- 2026-10-16: PyMuPDF (AGPL) kullanılmaz; Syncfusion/SautinSoft gibi ticari bileşenler yerine açık kaynak alternatifler — .exe dağıtımı ve lisans temizliği için.
+- 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
 
 ## 5. Açık sorular / bekleyenler
 - Arayüz: Sözcük/Tabcel görünümü kesin mi, yoksa MS Office şeridi mi? (Kullanıcı ikisini de uygun gördü; varsayılan: Eagle Office görünümü.)

@@ -12,8 +12,8 @@ PDFgear benzeri, sade, Türkçe, yerel çalışan bir PDF masaüstü uygulaması
 ## Kesin kurallar (değiştirme, önce kullanıcıya sor)
 1. **Lisans/koruma aşılmaz:** PDFgear'ın veya başka bir yazılımın lisans/ürün anahtarı/ücret kontrolünü crack etme, patch'leme, atlatma yok. Dekompile edilmiş kod projeye girmez.
 2. **Ad geçicidir.** Kullanıcıya görünen ad yalnızca `eaglepdf/__init__.py` içindeki `APP_NAME` sabitinden okunur (pencere başlığı, menüler, yardım, `%APPDATA%` dahil). Arayüz metnine "EaglePDF" elle yazılmaz. Ürün ailesi adı `PAKET_ADI` sabitinden gelir.
-3. **Lisans uyumu:** GPL/AGPL bileşen eklenmez (.exe dağıtılabilir kalsın). **PyMuPDF (AGPL) kullanılmaz.** Yeni bağımlılıktan önce lisansı kontrol et, `README` / Hakkında listesine yaz. PySide6 LGPL → yalnızca PyInstaller onedir.
-4. **Ticari kütüphane yok:** Syncfusion, SautinSoft gibi ücretli bileşenler kullanılmaz; açık kaynak/izinli alternatifler seçilir.
+3. **Lisans: EaglePDF açık kaynaktır, AGPL-3.0** (`LICENSE`). Ticari amaç yok, satılmaz; GitHub'a konabilir. Ana PDF motoru **PyMuPDF (AGPL)**; yeni bağımlılık AGPL-3.0 ile uyumlu olmalı (MIT/BSD/Apache/LGPL serbest). Her bağımlılığın lisansı `README` / Hakkında listesine yazılır. PySide6 LGPL → yalnızca PyInstaller onedir. Kodu kapalı tutup dağıtmak/satmak istenirse önce kullanıcıya sor (Artifex ticari lisansı gerekir).
+4. **Ticari kütüphane yok:** Syncfusion, SautinSoft gibi ücretli bileşenler kullanılmaz; açık kaynak alternatifler seçilir.
 5. **Veri buluta gönderilmez.** Telemetri, hesap, bulut yapay zekâ yok. Her şey yerelde.
 6. **Orijinal dosya korunur:** Kayıt her zaman geçici dosyaya yaz → yerine koy düzeniyle; "Farklı kaydet" varsayılan, üzerine yazma açık onayla.
 7. **Arayüz Türkçe;** kod tanımlayıcıları İngilizce, yorumlar Türkçe ya da İngilizce (dosya içinde tutarlı). Türkçe büyük/küçük harfte `str.upper/lower` yerine ortak yardımcı (`metin_tr`) kullanılır.
@@ -36,7 +36,7 @@ surec.md  CLAUDE.md  README.md  requirements.txt
 
 ## Teknoloji ve kısıtlar
 - Python 3.11 (`.venv`), PySide6 (LGPL).
-- Aday kütüphaneler (lisansı doğrulanacak): pypdfium2 (görüntüleme/render), pypdf veya pikepdf (sayfa işlemleri/şifreleme), Tesseract (OCR), Pillow, python-docx/openpyxl (dönüştürme çıktıları).
+- Ana motor: **PyMuPDF** (render, metin, düzenleme, ek açıklama, form, şifreleme, birleştir/böl). Yardımcılar (lisansı doğrulanacak): Tesseract (OCR), Pillow, python-docx/openpyxl (dönüştürme çıktıları). PyMuPDF yetmezse pikepdf/pypdfium2 eklenir.
 - RAM 7,9 GB: büyük PDF'lerde sayfaları tembel (lazy) yükle.
 
 ## Test ve çalıştırma
