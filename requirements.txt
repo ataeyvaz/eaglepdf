@@ -1,0 +1,3 @@
+PySide6>=6.6        # LGPL
+PyMuPDF>=1.24       # AGPL-3.0
+pytest>=8

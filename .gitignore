@@ -1,6 +1,7 @@
-﻿__pycache__/
 .venv/
+__pycache__/
 *.pyc
-dist/
-build/
 .pytest_cache/
+build/
+dist/
+*.tmp
