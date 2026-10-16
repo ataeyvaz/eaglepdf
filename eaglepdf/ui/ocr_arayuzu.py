@@ -134,8 +134,9 @@ class OcrArayuzu:
 
         sonuc = []
         try:
-            ok = self._dene(lambda: sonuc.append(b.aranabilir_yap(sayfalar, d.secili_dil(), ilerleme=geri_bildirim)),
-                            sayfalar or list(range(b.sayfa_sayisi)))
+            with self._mesgul_blok():   # OCR sürerken sekme değişmez; sonuç başlatılan belgeye yazılır
+                ok = self._dene(lambda: sonuc.append(b.aranabilir_yap(sayfalar, d.secili_dil(), ilerleme=geri_bildirim)),
+                                sayfalar or list(range(b.sayfa_sayisi)))
         except ocr.OcrIptal:
             ok = False
             self.statusBar().showMessage("OCR iptal edildi; belge değişmedi.", 5000)

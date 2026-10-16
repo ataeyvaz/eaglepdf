@@ -1,6 +1,7 @@
 """Ana pencere: başlık şeridi, menüler, araç çubuğu, paneller ve görüntüleyici."""
 
 import os
+from contextlib import contextmanager
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, QSize, Qt, Signal
@@ -69,6 +70,8 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         super().__init__()
         self._oturumlar: list[BelgeOturumu] = []   # açık belgeler (sekmeler); şimdilik en çok 1
         self._etkin = -1                           # etkin oturumun sırası, yoksa -1
+        self._mesgul = 0                           # >0: uzun işlem sürüyor, sekme değişimi yok sayılır
+        self._geciste = False                      # sekme geçişi sürerken tekrar girişi önler
         self.ayarlar = (QSettings(ayar_dosyasi, QSettings.IniFormat) if ayar_dosyasi
                         else QSettings(QSettings.IniFormat, QSettings.UserScope, APP_NAME, APP_NAME))
         self._sonuclar: list = []
@@ -374,38 +377,80 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             self.kucuk.belge_ata(None)
             self.yer_imleri.belge_ata(None)
             self._oturumlar[sira].belge.kapat()
-            self._oturumlar[sira] = BelgeOturumu(yeni)
+            self._oturumlar[sira] = BelgeOturumu(yeni, olcek=self.goruntuleyici.olcek)
         else:
-            self._oturumlar.append(BelgeOturumu(yeni))
+            self._oturumlar.append(BelgeOturumu(yeni, olcek=self.goruntuleyici.olcek))
             self._etkin = len(self._oturumlar) - 1
         self.ayarlar.setValue("son_klasor", str(Path(yol).parent))
         self._son_ekle(str(Path(yol)))
-        self._belge_goster(0)
+        self._oturumu_goster(self._oturumlar[self._etkin])
         self._acilis_yakinlastirma()
 
     # --- sekme geçişi ---
     def _durum_kaydet(self):
-        """Etkin oturumun görünüm durumunu (sayfa, ölçek) oturuma yazar; sekme değişmeden hemen önce çağrılır."""
+        """Etkin oturumun belgeye özgü görünüm durumunu (sayfa, ölçek, arama, panel sekmesi) oturuma yazar;
+        sekme değişmeden hemen önce çağrılır."""
         if 0 <= self._etkin < len(self._oturumlar):
             o = self._oturumlar[self._etkin]
             o.gecerli_sayfa = self.goruntuleyici.gecerli_sayfa
             o.olcek = self.goruntuleyici.olcek
+            o.arama_metni = self.bul_kutu.text()
+            o.arama_sonuclari, o.arama_no = list(self._sonuclar), self._sonuc_no
+            o.arama_acik = self.bul_cubugu.isVisible()
+            o.panel_sekmesi = self.paneller.currentIndex()
+
+    def _bekleyen_islemi_iptal_et(self):
+        """Belgeye bağlı yarım işlemler sekme değişince bırakılır: bekleyen resim/mühür yerleştirme iptal, araç El'e döner."""
+        if getattr(self, "_bekleyen_png", None) is not None:
+            self._bekleyen_png = None
+            if self._etkin_arac() in ("resim", "muhur"):
+                self.e_el.setChecked(True)
+                self._arac_uygula()
+
+    def _oturumu_goster(self, o: BelgeOturumu):
+        """`o` oturumunu (zaten `_etkin`) görüntüleyici ve panellere bağlar; saklı sayfa/ölçek/arama/panel durumunu geri yükler."""
+        self._bekleyen_islemi_iptal_et()
+        self._geciste = True
+        try:
+            self._belge_goster(o.gecerli_sayfa)
+            if abs(self.goruntuleyici.olcek - o.olcek) > 1e-4:
+                self.goruntuleyici.olcek_ata(o.olcek)
+            self.bul_kutu.blockSignals(True)   # metni geri yazmak yeni arama başlatmasın
+            self.bul_kutu.setText(o.arama_metni)
+            self.bul_kutu.blockSignals(False)
+            self._sonuclar, self._sonuc_no = list(o.arama_sonuclari), o.arama_no
+            self.goruntuleyici.vurgulari_ata(self._sonuclar, self._sonuc_no)
+            self.bul_cubugu.setVisible(o.arama_acik)
+            self._bul_bilgi_yaz(bool(o.arama_metni.strip()))
+            self.paneller.setCurrentIndex(o.panel_sekmesi)
+            self._durumu_guncelle()
+        finally:
+            self._geciste = False
+
+    @contextmanager
+    def _mesgul_blok(self):
+        """Uzun işlem (OCR, toplu yazdırma…) sürerken sekme değişimi yok sayılır; işlem başladığı belgeye yazar."""
+        self._mesgul += 1
+        try:
+            yield
+        finally:
+            self._mesgul -= 1
 
     def _etkinlestir(self, sira: int):
-        """`sira`daki sekmeyi etkin yapar: eskinin durumunu saklar, yeni belgeyi görüntüleyiciye bağlar, sayfa/ölçeği döndürür."""
+        """`sira`daki sekmeyi etkin yapar: eskinin durumunu saklar, yeni belgeyi görüntüleyiciye bağlar."""
         if not 0 <= sira < len(self._oturumlar) or sira == self._etkin:
+            return
+        if self._mesgul:
+            self._sekmeleri_tazele()   # çubuk eski sekmede kalsın
+            self.statusBar().showMessage("Bir işlem sürüyor; bitince sekme değiştirebilirsiniz.", 3000)
             return
         self._durum_kaydet()
         self._etkin = sira
-        o = self._oturumlar[sira]
-        self._belge_goster(o.gecerli_sayfa)
-        if abs(self.goruntuleyici.olcek - o.olcek) > 1e-4:
-            self.goruntuleyici.olcek_ata(o.olcek)
-        self._durumu_guncelle()
+        self._oturumu_goster(self._oturumlar[sira])
 
     def _sekme_secildi(self, sira: int):
         """Kullanıcı sekme çubuğundan başka sekmeyi seçti."""
-        if sira != self._etkin:
+        if sira != self._etkin and not self._geciste:
             self._etkinlestir(sira)
 
     def _acilis_yakinlastirma(self):
@@ -440,19 +485,15 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             self.kucuk.belge_ata(None)
             self.yer_imleri.belge_ata(None)
             self.aciklama_paneli.doldur([])
+            self._sonuclar, self._sonuc_no = [], -1   # komşu sekme geri yüklenirken kendi sonuçlarını getirir
         self._oturumlar.pop(sira).belge.kapat()
         if not self._oturumlar:
             self._etkin = -1
         elif etkin_miydi:
             self._etkin = min(sira, len(self._oturumlar) - 1)   # sağdaki, yoksa soldaki komşu
-            o = self._oturumlar[self._etkin]
-            self._belge_goster(o.gecerli_sayfa)
-            if abs(self.goruntuleyici.olcek - o.olcek) > 1e-4:
-                self.goruntuleyici.olcek_ata(o.olcek)
+            self._oturumu_goster(self._oturumlar[self._etkin])
         elif sira < self._etkin:
             self._etkin -= 1
-        if etkin_miydi:
-            self._sonuclar, self._sonuc_no = [], -1
 
     def _belgeyi_kapat_sessiz(self):
         """Etkin sekmeyi sormadan kapatır (uyumluluk adı)."""
@@ -471,6 +512,8 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.aciklamalari_tazele()
         self.kucuk.vurgula(min(sayfa, self.belge.sayfa_sayisi - 1))
         self._sonuclar, self._sonuc_no = [], -1
+        self.goruntuleyici.vurgulari_ata([])   # önceki belgenin/içeriğin arama vurguları kalmasın
+        self.bul_bilgi.setText("")
         self._durumu_guncelle()
 
     def _sekmeleri_tazele(self):
@@ -919,7 +962,8 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             return p if tamam else None
 
         try:
-            sonuc = toplu_yazdir(yollar, yazici, aralik, parola_sor or parola, geri)
+            with self._mesgul_blok():
+                sonuc = toplu_yazdir(yollar, yazici, aralik, parola_sor or parola, geri)
         finally:
             ilerleme.close()
         tamam = [s for s in sonuc if s.tamam]

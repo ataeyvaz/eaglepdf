@@ -20,6 +20,7 @@ class BelgeOturumu:
     arama_metni: str = ""
     arama_sonuclari: list = field(default_factory=list)
     arama_no: int = -1
+    arama_acik: bool = False   # bul çubuğu görünür mü
     panel_sekmesi: int = 0   # 0 küçük resimler, 1 yer imleri
 
     def ayni_dosya_mi(self, yol) -> bool:
