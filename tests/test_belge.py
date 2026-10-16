@@ -141,3 +141,25 @@ def test_turkce_arama(tmp_path):
 def test_metin_tr():
     assert metin_tr.kucuk("IİıiŞ") == "ıiıişi"[:4] + "ş"
     assert metin_tr.buyuk("iıçş") == "İIÇŞ"
+
+
+def test_belge_ozellikleri_duzenle_geri_al_temizle(tmp_path):
+    b = Belge.ac(pdf_yap(tmp_path / "o.pdf", 1))
+    b.ozellikleri_ata(baslik="Rapor — İstanbul", yazar=" Ata ", konu="Işık", anahtar="a, b")
+    o = b.ozellikler()
+    assert o["Başlık"] == "Rapor — İstanbul" and o["Yazar"] == "Ata" and o["Konu"] == "Işık" and b.degisti
+    b.ozellikleri_ata(yazar="")  # yalnızca verilen alan değişir, boş = sil
+    assert b.ozellikler()["Yazar"] == "" and b.ozellikler()["Başlık"] == "Rapor — İstanbul"
+    b.kaydet(tmp_path / "k.pdf")
+    k = Belge.ac(tmp_path / "k.pdf")
+    assert k.ozellikler()["Konu"] == "Işık" and k.ozellikler()["Anahtar sözcükler"] == "a, b"
+    k.ozellikleri_temizle()
+    assert not k.ozellikler()["Başlık"] and not k.ozellikler()["Konu"]
+    assert k.geri_al() and k.ozellikler()["Konu"] == "Işık"
+    b.kapat(); k.kapat()
+
+
+def test_pdf_tarihi():
+    assert Belge.pdf_tarihi("D:20261016233047+03'00'") == "16.10.2026 23:30"
+    assert Belge.pdf_tarihi("D:2026") == "01.01.2026"
+    assert Belge.pdf_tarihi("") == "" and Belge.pdf_tarihi("garip") == "garip"

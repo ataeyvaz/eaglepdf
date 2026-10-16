@@ -20,6 +20,7 @@ from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
+from .ozellikler_penceresi import OzelliklerPenceresi
 from .ocr_arayuzu import OcrArayuzu
 from .duzenleme_arayuzu import DuzenlemeArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
@@ -720,8 +721,21 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
     def ozellikleri_goster(self):
         if not self.belge:
             return
-        satirlar = "\n".join(f"{k}: {v}" for k, v in self.belge.ozellikler().items() if v)
-        QMessageBox.information(self, "Belge Özellikleri", satirlar or "Bilgi yok.")
+        d = OzelliklerPenceresi(self.belge.ozellikler(), self)
+        if not d.exec():
+            return
+        try:
+            if d.temizle_istendi:
+                self.belge.ozellikleri_temizle()
+            elif d.degisenler():
+                self.belge.ozellikleri_ata(**d.degisenler())
+            else:
+                return
+        except BelgeHatasi as h:
+            QMessageBox.warning(self, APP_NAME, str(h))
+            return
+        self._durumu_guncelle()
+        self.statusBar().showMessage("Belge özellikleri güncellendi (kaydedince dosyaya yazılır).", 5000)
 
     def _tam_ekran(self):
         self.showNormal() if self.isFullScreen() else self.showFullScreen()

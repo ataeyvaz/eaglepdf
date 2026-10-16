@@ -20,6 +20,9 @@ Araç çubuğundaki iki araçtan biri her zaman açıktır:
 - **El Aracı:** sayfayı fareyle tutup sürükleyerek kaydırırsınız.
 - **Metin Seçme Aracı:** metnin üzerinde sürükleyerek kelime kelime seçersiniz; seçim sayfalar arasında da sürebilir. **Ctrl+C** (Düzen → Seçili Metni Kopyala) seçili metni panoya alır, **Esc** seçimi kaldırır. Taranmış (resim) sayfalarda metin yoktur, seçilemez; bunun için ileride OCR eklenecek.
 
+<!-- konu: ozellikler | Belge Özellikleri -->
+**Dosya → Belge Özellikleri…** belgenin başlık, yazar, konu ve anahtar sözcüklerini düzenlemenizi sağlar; oluşturan program, tarihler, sayfa sayısı ve dosya boyutu salt okunur görünür. Değişiklik belgeyi “değişti” yapar, **Geri Al** ile döndürülebilir ve kaydedince dosyaya yazılır. **Tüm bilgileri temizle** düğmesi başlık, yazar, tarihler, üretici ve XMP üst verisini siler; belgeyi paylaşmadan önce kişisel bilgileri kaldırmak için kullanışlıdır. (Belge dijital imzalıysa değişiklik kaydedilince imza geçersiz olur.)
+
 <!-- konu: ayarlar | Ayarlar -->
 **Dosya → Ayarlar…** (Ctrl+,) tercihlerinizi tek yerden değiştirir; Tamam'a basınca hemen uygulanır.
 - **Genel:** açıklamalarda görünecek yazar adı; belge açılırken yakınlaştırma (sayfa genişliğine sığdır, tam sayfa, %100); sayfa düzeni (sürekli/tek, çift sayfa); gece modu; varsayılan araç (El / Metin seçme); son kullanılanlar listesini temizleme.

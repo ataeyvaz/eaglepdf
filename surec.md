@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅, sertifikalı dijital imza ✅. Faz 1 artıklarından **ayarlar penceresi ✅**; kalanlar: belge özellikleri düzenleme, toplu yazdırma, belge sekmeleri (§2). Testler: `.venv\Scripts\python -m pytest` → **190 geçti** (~2 dk).
+Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅, sertifikalı dijital imza ✅. Faz 1 artıklarından **ayarlar penceresi ✅, belge özellikleri düzenleme ✅**; kalanlar: toplu yazdırma, belge sekmeleri (§2). Testler: `.venv\Scripts\python -m pytest` → **197 geçti** (~2 dk).
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -13,7 +13,7 @@ Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅
 | 3 Düzenleme | metin bloğu düzenleme, resim/mühür (özel mühür dahil, taşı/boyutlandır), kalıcı silme (redaction + ara-ve-sil), düzleştir, kırp (+otomatik), sayfa boyutu, filigran (metin/resim, **kaldırılabilir**), arka plan, üstbilgi/altbilgi, sayfa numarası | ✅ |
 | 4 Dönüştürme | PDF→Word/Excel/PowerPoint/resim/metin/HTML; resim/Word/Excel/metin/HTML→PDF; sıkıştır (3 düzey); karşılaştır (görsel + kelime farkı); tarayıcıdan PDF (WIA, **gerçek cihazla denenmedi**); toplu işlem + ilerleme + iptal | ✅ (son commit'e bak: `git log -1`) |
 | 5 OCR / koruma / dijital imza | **Koruma ✅** (Koruma menüsü: parola ekle AES-256 + izinler, parolayı kaldır, belge izinleri; çıktı hep yeni dosya). **OCR ✅** (OCR menüsü: aranabilir PDF yap, bölgeden metin çıkar; taranmış belgede Word/Excel/HTML/metin dönüşümü otomatik OCR). **Dijital imza ✅** (Koruma menüsü: sertifika oluştur, dijital imzala (görünür/görünmez, art arda), boş imza alanı, imzaları doğrula; imzalı belge kaydı uyarır) | ✅ |
-| Faz 1 artıkları | **Ayarlar penceresi ✅** (Dosya → Ayarlar…, Ctrl+,: yazar, açılış yakınlaştırma, sayfa düzeni, gece, araç, son liste, çıktı klasörü, OCR dili, “Birlikte aç” kaydı). Kalan: belge özellikleri düzenleme, toplu yazdırma, belge sekmeleri (ertelendi) | ⏸ |
+| Faz 1 artıkları | **Ayarlar penceresi ✅** (Dosya → Ayarlar…, Ctrl+,: yazar, açılış yakınlaştırma, sayfa düzeni, gece, araç, son liste, çıktı klasörü, OCR dili, “Birlikte aç” kaydı). **Belge özellikleri ✅** (Dosya → Belge Özellikleri…: başlık/yazar/konu/anahtar düzenle, tümünü temizle; geri alınır). Kalan: toplu yazdırma, belge sekmeleri (ertelendi) | ⏸ |
 
 ## 2. Sıradaki işler (Faz 5 — öncelik sırasıyla)
 **Önce kullanıcıya sor / bilgilendir:** sertifikalı imza için pyHanko lisansı/uyumu doğrulanmalı.
@@ -22,7 +22,7 @@ Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅
 
 2. ~~**Koruma**~~ ✅ yapıldı (`core/koruma.py`, `ui/koruma_arayuzu.py`, testler `test_koruma*.py`). Not: açık belgenin üzerine yazılmaz, korumalı/parolasız **kopya** yazılır.
 3. ~~**Sertifikalı dijital imza**~~ ✅ yapıldı (`core/dijital_imza.py`, `ui/imza_arayuzu.py`; testler `test_dijital_imza.py`, `test_imza_arayuzu.py`). Sonra çözülecekler §7'de.
-4. Artıklar: belge özellikleri düzenleme (başlık/yazar…), toplu yazdırma, belge sekmeleri. (~~Ayarlar penceresi~~ ✅)
+4. Artıklar: toplu yazdırma, belge sekmeleri. (~~Belge özellikleri~~ ✅) (~~Ayarlar penceresi~~ ✅)
 5. (İsteğe bağlı) üstbilgi/altbilgi/sayfa numarası için "kaldır"; PDFgear'ı elle açıp `docs/ozellikler.md`'deki ⚠ noktaları gözlemle.
 
 ## 3. Çalışma sistemi (her adımda)
@@ -59,6 +59,7 @@ eaglepdf/ui/             PySide6
   duzenleme_arayuzu.py   Faz 3 (Düzenle menüsü, Sayfa menüsü eklemeleri, mühür/resim yerleştirme)
   donusum_arayuzu.py     Faz 4 (Dönüştür menüsü, tarayıcı akışı)
   koruma_arayuzu.py      Faz 5 (Koruma menüsü, ParolaEkleDialog)
+  ozellikler_penceresi.py Belge Özellikleri (düzenlenebilir 4 alan + salt okunur bilgi + temizle); çekirdek: Belge.ozellikleri_ata/temizle/pdf_tarihi
   ayarlar_penceresi.py   Ayarlar (Genel / Klasörler ve OCR / Dosya İlişkisi); QSettings'e yazar, ana pencere `ayarlari_uygula`
   imza_arayuzu.py        Faz 5 (Koruma menüsüne dijital imza eylemleri, kayıt uyarısı `_imzali_kayit_onayi`)
   ocr_arayuzu.py         Faz 5 (OCR menüsü, aranabilir PDF penceresi + ilerleme/iptal, bölge aracı 'ocr_bolge')
@@ -112,5 +113,6 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 - **OCR notları:** `tesseract.exe` GEREKMEZ (PyMuPDF kendi Tesseract'ını taşır); yalnızca dil verisi: `%APPDATA%\EaglePDF	essdata	ur|eng.traineddata` (tessdata_fast, Apache-2.0; ayrıca TESSDATA_PREFIX ve Program Files\Tesseract-OCR	essdata aranır). Makineye `winget` ile Tesseract 5.4 de kuruldu (kullanıcı onayıyla, 2026-10-16) ama kullanılmıyor. Görünmez katman `TextWriter.write_text(render_mode=3)` + Noto Sans; **pdf2docx render_mode 3 metni görmez** → OCR'lı Word çıktısı python-docx ile düz paragraf. Döndürülmüş sayfalar atlanır. Önce tüm sayfalar OCR'lanır, sonra tek geri-alınır adımda yazılır (iptalde belge değişmez). Test sırasında Helvetica Türkçe harf çizmez → test görüntüsünde Noto kullan. Kalite: 'ıİ' gibi belirsiz çiftler karışabilir (tessdata_best ile iyileşebilir).
 - **Dijital imza notları:** pyHanko (MIT) artımlı güncelleme yapar → imzalamadan önce *kaydedilmiş dosya baytları* kullanılır (`_kaynak_bayt`); PyMuPDF `tobytes()` dosyayı yeniden yazar ve önceki imzaları bozar. İmzalı belgeyi PyMuPDF ile kaydetmek imzayı geçersiz kılar → kayıtta uyarı; değişmiş imzalı belgeye yeni imza eklenmez. Güven: sistem deposu kullanılmaz, kendinden imzalı sertifika 'kimlik doğrulanmadı' görünür. pyHanko `load_pkcs12` hatayı yutup None döner. Alan adları belgeye göre benzersiz (`Imza1…`). Görünür kutu: Noto Sans (uharfbuzz gerekir), 4 hazır konum. **Sonra çözülecek:** kutuyu sürükleyerek yerleştirme, zaman damgası (RFC 3161)/LTV, Windows sertifika deposundan seçme, imza kutusuna resim (çizilmiş imza), imzalı belgede sayfa işlemlerinin kısıtlanması, sistem güven deposu seçeneği.
 - **Ayarlar notları:** Windows 10/11 varsayılan uygulamayı programdan atamaya izin vermez (UserChoice korumalı; atlatılmaz) → yalnızca 'Birlikte aç' kaydı + 'Varsayılan uygulamalar' ekranı açılır. İlişkilendirme testleri sahte anahtara (`Software\EaglePDFTest`) yazar, gerçek kayda dokunmaz. Arayüz dili seçeneği yok (yalnız Türkçe, karar). Üzerine yazma onayı ayarlanabilir DEĞİL (CLAUDE.md kural 6). Görünüm sabiti `MOD_SUREKLI` değeri `"sureklu"` (yazım hatası ama ayar dosyalarında kayıtlı; değiştirme).
+- **Özellikler notu:** `set_metadata` yalnızca Info sözlüğünü yazar; XMP yalnızca 'temizle'de silinir (XMP'de ayrı başlık/yazar varsa okuyucular onu gösterebilir — bu durum denenmedi). Oluşturma/değiştirme tarihleri düzenlenemez.
 - Test notu: `tests/test_donustur.py` Arial'a (`C:\Windows\Fonts\arial.ttf`) bağlı; yoksa atlanır.
 - RAM 7,9 GB ve dolu: büyük dönüşümlerde başka programları kapat. Git kimliği bu repoda yerel `Ata <ataeyvaz@gmail.com>`.

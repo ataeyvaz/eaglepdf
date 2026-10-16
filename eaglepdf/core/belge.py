@@ -6,6 +6,7 @@ Sayfa numaraları kullanıcıya 1'den, bu modülde 0'dan başlar.
 """
 
 import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -115,10 +116,38 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         return {
             "Başlık": m.get("title", ""), "Yazar": m.get("author", ""), "Konu": m.get("subject", ""),
             "Anahtar sözcükler": m.get("keywords", ""), "Oluşturan": m.get("creator", ""),
-            "Üretici": m.get("producer", ""), "Oluşturma tarihi": m.get("creationDate", ""),
-            "Değiştirme tarihi": m.get("modDate", ""), "Sayfa sayısı": str(self.sayfa_sayisi),
+            "Üretici": m.get("producer", ""), "Oluşturma tarihi": self.pdf_tarihi(m.get("creationDate", "")),
+            "Değiştirme tarihi": self.pdf_tarihi(m.get("modDate", "")), "Sayfa sayısı": str(self.sayfa_sayisi),
             "Dosya boyutu": f"{self.yol.stat().st_size} bayt" if self.yol and self.yol.exists() else "",
         }
+
+    DUZENLENEBILIR_OZELLIKLER = {"baslik": "title", "yazar": "author", "konu": "subject", "anahtar": "keywords"}
+
+    @staticmethod
+    def pdf_tarihi(metin: str) -> str:
+        """`D:20261016233047+03'00'` → `16.10.2026 23:30`; çözülemezse metni olduğu gibi döndürür."""
+        m = re.match(r"D:(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?", metin or "")
+        if not m:
+            return metin or ""
+        y, ay, g, sa, dk = m.groups()
+        tarih = f"{g or '01'}.{ay or '01'}.{y}"
+        return f"{tarih} {sa}:{dk or '00'}" if sa else tarih
+
+    @geri_alinabilir
+    def ozellikleri_ata(self, baslik: str | None = None, yazar: str | None = None, konu: str | None = None,
+                        anahtar: str | None = None):
+        """Verilen (None olmayan) belge özelliklerini yazar; boş metin alanı siler."""
+        yeni = dict(self._doc.metadata or {})
+        for ad, deger in (("baslik", baslik), ("yazar", yazar), ("konu", konu), ("anahtar", anahtar)):
+            if deger is not None:
+                yeni[self.DUZENLENEBILIR_OZELLIKLER[ad]] = deger.strip()
+        self._doc.set_metadata(yeni)
+
+    @geri_alinabilir
+    def ozellikleri_temizle(self):
+        """Tüm üst veriyi (başlık, yazar, tarihler, üretici, XMP) siler; gizlilik için."""
+        self._doc.set_metadata({})
+        self._doc.del_xml_metadata()
 
     def icindekiler(self) -> list[tuple[int, str, int]]:
         """Yer imleri: (düzey, başlık, 0 tabanlı sayfa)."""
