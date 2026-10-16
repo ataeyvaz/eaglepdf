@@ -16,12 +16,12 @@ from .hatalar import BelgeHatasi
 TUR_ETIKETLERI = {
     "Highlight": "Vurgu", "Underline": "Altı çizili", "StrikeOut": "Üstü çizili", "Squiggly": "Dalgalı çizgi",
     "Ink": "Çizim", "Text": "Not", "FreeText": "Metin kutusu", "Line": "Çizgi / ok", "Square": "Dikdörtgen",
-    "Circle": "Elips", "FileAttachment": "Dosya eki", "Stamp": "Mühür", "Polygon": "Çokgen", "PolyLine": "Çoklu çizgi",
+    "Circle": "Elips", "FileAttachment": "Dosya eki", "Stamp": "Mühür / Resim", "Polygon": "Çokgen", "PolyLine": "Çoklu çizgi",
     "Caret": "Ekleme işareti",
 }
 ISARET_TURLERI = ("vurgu", "alti", "ustu", "dalga")
 SEKIL_TURLERI = ("cizgi", "ok", "dikdortgen", "elips")
-TASINABILIR = {"Text", "FreeText", "Square", "Circle"}
+TASINABILIR = {"Text", "FreeText", "Square", "Circle", "Stamp"}
 STIL_ANAHTARI = "EaglePDFStil"  # metin kutusunun kalın/italik bilgisi ("B", "I", "BI")
 KENAR_ANAHTARI = "EaglePDFKenar"  # metin kutusu kenarlık rengi ("r g b", 0–1)
 
@@ -311,7 +311,7 @@ class EkAciklamaIslemleri:
             yeni.update()
             return yeni.xref
         a.set_rect(pymupdf.Rect(r.x0 + dx, r.y0 + dy, r.x1 + dx, r.y1 + dy))
-        if tur != "FreeText":
+        if tur not in ("FreeText", "Stamp"):
             a.update()
         return xref
 

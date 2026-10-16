@@ -12,6 +12,7 @@ from pathlib import Path
 import pymupdf
 
 from .. import metin_tr
+from .duzenleme import DuzenlemeIslemleri
 from .ekaciklama import EkAciklamaIslemleri
 from .gecmis import Gecmis, belgeyi_degistir, geri_alinabilir
 from .hatalar import BelgeHatasi, ParolaGerekli
@@ -60,7 +61,7 @@ def _gecici_yaz(kaydet_fn, hedef: Path, yerine_koymadan_once=None):
         raise
 
 
-class Belge(EkAciklamaIslemleri):
+class Belge(EkAciklamaIslemleri, DuzenlemeIslemleri):
     def __init__(self, doc: pymupdf.Document, yol: Path | None):
         self._doc = doc
         self._gecmis = Gecmis()

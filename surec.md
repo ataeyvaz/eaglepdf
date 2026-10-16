@@ -11,11 +11,13 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Çekirdek (`core/belge.py`) | aç, parola, render, Türkçe arama, sayfa sil/döndür/ekle/sırala/çıkar, birleştir, böl, güvenli kayıt | 11 test geçti | ✅ |
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım, hakkında, kırmızı tema | Görüntüleyici (sürekli kaydırma, tembel çizim, yakınlaştırma), küçük resim + yer imi paneli, arama çubuğu, sayfa işlemleri menüsü, birleştir/böl pencereleri, yardım, hakkında; 4 arayüz testi | ✅ |
 | Faz 1: görünüm ve araçlar | tek/çift/sürekli sayfa, el + metin seçme (kopyala), gece modu, yazdırma (+aralık/seçili), çizgi simgeler | tamamlandı; 20 test geçti | ✅ |
+| Faz 3 çekirdek (`core/duzenleme.py`) | kırp (+otomatik), sayfa boyutu, filigran (metin/resim), arka plan, üstbilgi/altbilgi, sayfa numarası, kalıcı silme (redaction), düzleştirme, mühür/resim (saydam, taşı/boyutlandır), metin bloğu düzenleme | 32 yeni test (4 sayfa döndürmesinde doğrulandı) | ✅ |
+| Faz 3 arayüz | araçlar, diyaloglar, menü | — | 🔄 |
 | Faz 2 çekirdek (`core/ekaciklama.py`, `gecmis.py`, `yazitipi.py`) | vurgu/altı/üstü/dalga, çizim, not, şekil, metin kutusu (Türkçe, Noto Sans), bul/sil/taşı/renk/metin, bağlantı, yer imi, form alanları, görsel imza yerleştirme, geri al/yinele | 11 yeni test geçti (toplam 31) | ✅ |
 | Faz 2 arayüz | ikinci araç çubuğu (14 araç), seç/taşı/renk/metin düzenle/sil, açıklama paneli (süz, toplu sil), form doldurma (sayfa üstü kutular), görsel imza (çiz/yaz/resim, kayıtlı imzalar), bağlantı ekle/sil/tıkla, düzenlenebilir yer imleri, geri al/yinele | 47 test geçti; gerçek ekranda görüldü | ✅ |
 | Faz 1: belge sekmeleri | çoklu belge | yapılmadı (bkz. Kararlar) | ⏸ |
 
-Testler: `.venv\Scripts\python -m pytest` (47 geçti)
+Testler: `.venv\Scripts\python -m pytest` (79 geçti)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. **Faz 3'e başla:** düzenleme (metin düzenleme, resim ekle/taşı, mühür, redaction, düzleştirme, kırp, filigran, üstbilgi/altbilgi, sayfa numarası, arka plan, sayfa boyutu).
