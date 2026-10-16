@@ -369,7 +369,7 @@ def test_arac_cubuklari_gorunurlugu(pencere, tmp_path):
     assert not pencere.duzenleme_arac.isVisibleTo(pencere)
     assert str(pencere.ayarlar.value("duzenleme_arac_goster")).lower() == "false"
     assert [m.title() for m in [a.menu() for a in pencere.menuBar().actions()]] == \
-        ["&Dosya", "&Düzen", "&Görünüm", "&Açıklama", "Dü&zenle", "&Sayfa", "&Yardım"]
+        ["&Dosya", "&Düzen", "&Görünüm", "&Açıklama", "Dü&zenle", "Dö&nüştür", "&Sayfa", "&Yardım"]
 
 
 def test_filigran_kaldir_arayuzden(pencere, tmp_path, app, monkeypatch):

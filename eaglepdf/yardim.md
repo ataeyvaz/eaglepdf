@@ -83,6 +83,27 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 
 Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınabilir.
 
+<!-- konu: donusturme | Dönüştürme (Word, Excel, PowerPoint, resim, metin, HTML) -->
+**Dönüştür** menüsü, belgelerinizi başka biçimlere çevirir; her şey bu bilgisayarda yapılır. Açık belge kayıtlıysa pencereye otomatik eklenir (kaydedilmemiş değişiklikler varsa önce sorulur); başka dosyaları **Ekle…** ile ya da pencereye sürükleyerek ekleyebilirsiniz. Birden çok dosya art arda işlenir, ilerleme gösterilir, istediğiniz an **İptal** edebilirsiniz. Sonuçlar özgün dosyaların üzerine yazılmaz (ad çakışırsa “ad (2)” verilir).
+
+**PDF'den:**
+- **Word (.docx):** paragraflar, yazı biçimi, tablolar ve resimler korunmaya çalışılır.
+- **Excel (.xlsx):** sayfalardaki tablolar ayrı çalışma sayfalarına (S1-T1, S1-T2…) yazılır; “1.234,50” gibi sayılar gerçek sayıya çevrilir. Tablo yoksa metin satırları alınır.
+- **PowerPoint (.pptx):** her sayfa bir slayt. *Düzenlenebilir* biçimde metinler metin kutusu olur (aynı konumda), çizgi ve resimler arka plan görüntüsünde kalır; *Yalnızca resim* biçiminde her sayfa tek resimdir.
+- **Resim:** PNG, JPG, BMP ya da TIFF; 36–600 DPI; renkli, gri ya da siyah-beyaz; isterseniz tüm sayfalar alt alta tek uzun resimde.
+- **Metin (.txt)** ve **HTML**.
+- “Sayfalar” kutusuna `1-3, 7, 10-` gibi bir aralık yazarak yalnızca bu sayfaları çevirebilirsiniz. Parolalı dosyalar için parolayı yazın.
+- Taranmış (yalnızca resimden oluşan) sayfalarda metin yoktur; Word/Excel/PowerPoint/metin dönüşümü bunlar için *OCR* gerektirir ve şimdilik uyarı verir.
+
+**PDF'e:**
+- **Resimlerden:** PNG, JPG, BMP, GIF, TIFF, WEBP. Sayfa boyutu (A3–Legal ya da resim boyutunda), yön, kenar boşluğu seçilir; resimler listedeki sırayla tek PDF olur ya da her biri ayrı PDF. Telefon fotoğraflarının yönü (EXIF) düzeltilir; uygun JPEG'ler yeniden sıkıştırılmadan (kayıpsız) gömülür.
+- **Word (.docx), Excel (.xlsx), metin (.txt), HTML:** Word ya da Excel kurulu olması gerekmez. Başlık, paragraf, liste, tablo, resim ve temel biçim korunur; üst/alt bilgi, sütun düzeni ve grafikler gibi sayfa düzeni ayrıntıları birebir gelmeyebilir.
+
+<!-- konu: sikistirma | Sıkıştırma ve Karşılaştırma -->
+- **PDF Sıkıştır…** (Dönüştür menüsü): *Düşük* kalite kaybı olmadan yalnızca gereksiz veriyi atar; *Orta* resimleri 130 dpi'ye (önerilen), *Yüksek* 80 dpi'ye indirir. Sonuç özgün dosya yanına “…_sikistirilmis.pdf” olarak yazılır ve boyut kazancı gösterilir. Sonuç özgününden büyük çıkarsa özgün kopyalanır.
+- **PDF Karşılaştır…:** iki belgeyi sayfa sayfa karşılaştırır. Sol listede farklı sayfalar kırmızı görünür; sağda değişen yerlerin kırmızı işaretli görüntüsü ve eklenen/silinen kelimeler gösterilir. Sayfa sayıları farklıysa fazla sayfalar belirtilir.
+- **Tarayıcıdan PDF Oluştur…:** Windows'un tarama penceresiyle sayfaları tarar (isterseniz art arda birkaç sayfa), tek PDF olarak kaydeder ve açar. Bu özellik gerçek bir tarayıcıyla henüz denenmedi; sorun yaşarsanız geri bildirin.
+
 <!-- konu: kisayollar | Klavye Kısayolları -->
 | Kısayol | İş |
 |---|---|

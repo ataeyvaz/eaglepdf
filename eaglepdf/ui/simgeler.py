@@ -60,6 +60,10 @@ _YOLLAR = {
     "arkaplan": '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 14l5-4 4 3 3-2 4 3"/>',
     "ustalt": '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M5 7h14M5 17h14"/>',
     "numara": '<path d="M7 5l-2 5h5M9 5l-2 14M15 5l-2 14M19 5l-2 14M5 15h14"/>',
+    "donustur": '<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+    "sikistir": '<path d="M4 4l6 6M10 5v5H5M20 4l-6 6M14 5v5h5M4 20l6-6M10 19v-5H5M20 20l-6-6M14 19v-5h5"/>',
+    "karsilastir": '<rect x="3" y="5" width="8" height="14" rx="1"/><rect x="13" y="5" width="8" height="14" rx="1"/><path d="M6 10h2M16 10h2M16 14h2"/>',
+    "tarayici": '<path d="M3 14h18v5H3zM6 14V6h12v8M7 17h.01"/>',
     "form": '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M8 10h8M8 14h5"/>',
 }
 

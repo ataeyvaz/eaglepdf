@@ -15,6 +15,7 @@ from ..core import belge as belge_modulu
 from ..core.belge import Belge, BelgeHatasi, ParolaGerekli
 from . import simgeler, theme
 from .aciklama_arayuzu import AciklamaArayuzu
+from .donusum_arayuzu import DonusumArayuzu
 from .duzenleme_arayuzu import DuzenlemeArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
 from .hakkinda import HakkindaPenceresi
@@ -55,7 +56,7 @@ class SayfaKutusu(QLineEdit):
         self.valueChanged.emit(v)
 
 
-class AnaPencere(DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
+class AnaPencere(DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
         self.belge: Belge | None = None
@@ -282,6 +283,7 @@ class AnaPencere(DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
                                  self.e_ekle, self.e_bol]
         self._aciklama_kur()
         self._duzenleme_kur()
+        self._donusum_kur()
 
     # --- belge açma/kapama ---
     def ac_sor(self):

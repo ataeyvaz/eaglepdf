@@ -9,3 +9,4 @@ python-pptx>=1.0    # MIT: PowerPoint yazma
 mammoth>=1.8        # BSD-2: Word → HTML (Word'den PDF için)
 numpy>=1.26         # BSD-3: görüntü karşılaştırma
 Pillow>=10          # HPND: resim biçimleri
+comtypes>=1.4; sys_platform == "win32"   # MIT: tarayıcı (WIA)

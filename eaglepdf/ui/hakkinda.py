@@ -11,6 +11,11 @@ KATKILAR = [
     ("PyMuPDF (MuPDF)", "PDF motoru: görüntüleme, sayfa işlemleri", "AGPL-3.0"),
     ("PySide6 (Qt)", "arayüz", "LGPL-3.0"),
     ("pymupdf-fonts (Noto Sans)", "PDF'e gömülen Türkçe karakterli yazı tipi", "SIL OFL 1.1"),
+    ("pdf2docx", "PDF'den Word'e dönüştürme", "MIT"),
+    ("python-docx, openpyxl, python-pptx", "Word, Excel, PowerPoint dosyaları", "MIT"),
+    ("mammoth", "Word belgesini HTML'e çevirme", "BSD-2-Clause"),
+    ("NumPy, Pillow, OpenCV (headless)", "görüntü işleme, resim biçimleri", "BSD / HPND / Apache-2.0"),
+    ("comtypes", "tarayıcıdan sayfa alma (WIA)", "MIT"),
 ]
 GIZLILIK = "Tüm işlemler bu bilgisayarda yapılır; belgeleriniz hiçbir sunucuya gönderilmez."
 LISANS = f"{APP_NAME} açık kaynaktır (GNU AGPL-3.0). Ticari amaç taşımaz."

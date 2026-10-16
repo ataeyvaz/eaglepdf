@@ -23,6 +23,14 @@ def _dugmeler(pencere: QDialog, tamam: str) -> QDialogButtonBox:
     return kutu
 
 
+def dosya_boyutu_metni(bayt: int) -> str:
+    """12345678 → “11,8 MB” (Türkçe ondalık virgülü)."""
+    for birim, bolen in (("GB", 1 << 30), ("MB", 1 << 20), ("KB", 1 << 10)):
+        if bayt >= bolen:
+            return f"{bayt / bolen:.1f}".replace(".", ",") + f" {birim}"
+    return f"{bayt} bayt"
+
+
 def png_baytlari(img: QImage) -> bytes:
     ara = QByteArray()
     tampon = QBuffer(ara)
