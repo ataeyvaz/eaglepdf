@@ -31,3 +31,19 @@ class BelgeOturumu:
             return Path(self.belge.yol).resolve() == Path(yol).resolve()
         except OSError:
             return False
+
+
+def sekme_basligi(oturum: BelgeOturumu) -> str:
+    """Sekme yazısı: dosya adı (yoksa “Adsız”); kaydedilmemiş değişiklikte başına “● ”."""
+    ad = oturum.belge.yol.name if oturum.belge.yol else "Adsız"
+    return ("● " if oturum.belge.degisti else "") + ad
+
+
+def sekme_ipucu(oturum: BelgeOturumu) -> str:
+    """Sekmenin üzerine gelince: tam yol (yoksa “Kaydedilmemiş yeni belge”) + durum."""
+    parcalar = [str(oturum.belge.yol) if oturum.belge.yol else "Kaydedilmemiş yeni belge"]
+    if oturum.belge.degisti:
+        parcalar.append("Kaydedilmemiş değişiklikler var")
+    if oturum.belge.parola_korunur:
+        parcalar.append("Parolayla korunuyor")
+    return "\n".join(parcalar)

@@ -4,11 +4,11 @@ import os
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, QSize, Qt, Signal
-from PySide6.QtGui import QAction, QActionGroup, QIntValidator, QKeySequence
+from PySide6.QtGui import QAction, QActionGroup, QIcon, QIntValidator, QKeySequence
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QFileDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QSpinBox, QSplitter,
-    QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit, QApplication, QProgressDialog,
+    QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit, QApplication, QProgressDialog, QTabBar, QToolButton,
 )
 
 from .. import APP_NAME, PAKET_ADI
@@ -20,7 +20,7 @@ from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
-from .oturum import BelgeOturumu
+from .oturum import BelgeOturumu, sekme_basligi, sekme_ipucu
 from .ozellikler_penceresi import OzelliklerPenceresi
 from .toplu_yazdir import TopluYazdirPenceresi, toplu_yazdir
 from .ocr_arayuzu import OcrArayuzu
@@ -125,6 +125,19 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.arac.setToolButtonStyle(Qt.ToolButtonIconOnly)
         self.arac.setIconSize(QSize(20, 20))
         dikey.addWidget(self.arac)
+
+        self.sekmeler = QTabBar()   # açık belgeler; belge yokken gizli
+        self.sekmeler.setObjectName("belgeSekmeleri")
+        self.sekmeler.setTabsClosable(False)   # ✕ düğmesini kendimiz koyarız (temaya uygun, düz simge)
+        self.sekmeler.setMovable(True)
+        self.sekmeler.setExpanding(False)
+        self.sekmeler.setDocumentMode(True)
+        self.sekmeler.setElideMode(Qt.ElideRight)
+        self.sekmeler.setUsesScrollButtons(True)
+        self.sekmeler.tabMoved.connect(self._sekme_tasindi)
+        self.sekmeler.tabCloseRequested.connect(self._sekme_kapat_istendi)
+        self.sekmeler.hide()
+        dikey.addWidget(self.sekmeler)
 
         self.bul_cubugu = QWidget()
         bul = QHBoxLayout(self.bul_cubugu)
@@ -394,7 +407,55 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._sonuclar, self._sonuc_no = [], -1
         self._durumu_guncelle()
 
+    def _sekmeleri_tazele(self):
+        """Sekme çubuğunu oturum listesine uydurur (sayı, yazı, ipucu, kilit simgesi, etkin sekme, görünürlük)."""
+        cubuk = self.sekmeler
+        cubuk.blockSignals(True)
+        try:
+            while cubuk.count() > len(self._oturumlar):
+                cubuk.removeTab(cubuk.count() - 1)
+            while cubuk.count() < len(self._oturumlar):
+                i = cubuk.addTab("")
+                cubuk.setTabButton(i, QTabBar.RightSide, self._sekme_kapat_dugmesi())
+            for i, o in enumerate(self._oturumlar):
+                cubuk.setTabText(i, sekme_basligi(o))
+                cubuk.setTabToolTip(i, sekme_ipucu(o))
+                cubuk.setTabIcon(i, simgeler.simge("kilit") if o.belge.parola_korunur else QIcon())
+            if 0 <= self._etkin < cubuk.count():
+                cubuk.setCurrentIndex(self._etkin)
+        finally:
+            cubuk.blockSignals(False)
+        cubuk.setVisible(bool(self._oturumlar))
+
+    def _sekme_kapat_dugmesi(self) -> QToolButton:
+        d = QToolButton()
+        d.setAutoRaise(True)
+        d.setIcon(simgeler.simge("kapat"))
+        d.setIconSize(QSize(12, 12))
+        d.setToolTip("Sekmeyi kapat")
+        d.setCursor(Qt.ArrowCursor)
+        d.clicked.connect(lambda *_, dugme=d: self._sekme_dugmesi_tiklandi(dugme))
+        return d
+
+    def _sekme_dugmesi_tiklandi(self, dugme: QToolButton):
+        for i in range(self.sekmeler.count()):
+            if self.sekmeler.tabButton(i, QTabBar.RightSide) is dugme:
+                self.sekmeler.tabCloseRequested.emit(i)
+                return
+
+    def _sekme_tasindi(self, eski: int, yeni: int):
+        """Kullanıcı sekmeyi sürükleyip sırasını değiştirdi: oturum listesi aynı sıraya gelir, etkin oturum izlenir."""
+        etkin = self._oturumlar[self._etkin] if 0 <= self._etkin < len(self._oturumlar) else None
+        self._oturumlar.insert(yeni, self._oturumlar.pop(eski))
+        self._etkin = self._oturumlar.index(etkin) if etkin else -1
+
+    def _sekme_kapat_istendi(self, i: int):
+        """Sekmenin ✕ düğmesi. (Adım 2d'de birden çok sekme için genelleşir.)"""
+        if i == self._etkin:
+            self.kapat()
+
     def _durumu_guncelle(self):
+        self._sekmeleri_tazele()
         var = self.belge is not None
         for e in self._belge_eylemleri:
             e.setEnabled(var)
