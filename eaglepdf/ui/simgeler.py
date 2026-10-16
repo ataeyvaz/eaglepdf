@@ -65,6 +65,7 @@ _YOLLAR = {
     "karsilastir": '<rect x="3" y="5" width="8" height="14" rx="1"/><rect x="13" y="5" width="8" height="14" rx="1"/><path d="M6 10h2M16 10h2M16 14h2"/>',
     "tarayici": '<path d="M3 14h18v5H3zM6 14V6h12v8M7 17h.01"/>',
     "form": '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M8 10h8M8 14h5"/>',
+    "kilit": '<rect x="5" y="11" width="14" height="9" rx="1.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v2"/>',
 }
 
 

@@ -104,6 +104,12 @@ Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınab
 - **PDF Karşılaştır…:** iki belgeyi sayfa sayfa karşılaştırır. Sol listede farklı sayfalar kırmızı görünür; sağda değişen yerlerin kırmızı işaretli görüntüsü ve eklenen/silinen kelimeler gösterilir. Sayfa sayıları farklıysa fazla sayfalar belirtilir.
 - **Tarayıcıdan PDF Oluştur…:** Windows'un tarama penceresiyle sayfaları tarar (isterseniz art arda birkaç sayfa), tek PDF olarak kaydeder ve açar. Bu özellik gerçek bir tarayıcıyla henüz denenmedi; sorun yaşarsanız geri bildirin.
 
+<!-- konu: koruma | Koruma (Parola ve İzinler) -->
+- **Koruma → Parola Ekle…:** belgeyi AES-256 ile korumalı yeni bir dosyaya kaydeder; açık belge ve özgün dosya değişmez. *Açma parolası* belgeyi açarken sorulur. *Sahip parolası* aşağıdaki kısıtlamaları (yazdırma, kopyalama, düzenleme vb.) kaldırmak içindir; boş bırakılırsa açma parolası kullanılır. Yalnızca sahip parolası verirseniz belge herkese açılır ama kısıtlamalar uygulanır. **Parolayı unutursanız belge kurtarılamaz.**
+- **Koruma → Parolayı Kaldır…:** parolayla açtığınız belgenin parolasız bir kopyasını kaydeder.
+- **Koruma → Belge İzinleri…:** açık belgede hangi işlemlere izin verildiğini gösterir.
+- Kısıtlamalar PDF okuyucularının uyumuna dayanır; EaglePDF bunlara uyar, ama her program uymak zorunda değildir. Güvenlik için asıl koruma açma parolasıdır.
+
 <!-- konu: kisayollar | Klavye Kısayolları -->
 | Kısayol | İş |
 |---|---|
