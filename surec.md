@@ -5,16 +5,16 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 ## 1. Neredeyiz
 | İş / modül | Hedef | Yapılan | Durum |
 |---|---|---|---|
-| Keşif: PDFgear | Özellik haritası | `pdfeditor.exe` REA ile tarandı: .NET Framework/WPF, obfuscate değil, 2151 tip | 🔄 |
+| Keşif: PDFgear | Özellik haritası | `pdfeditor.exe` REA ile tarandı; REA üye çıkarımı boş döndü (metadata kabul edilmedi), bunun yerine exe içi okunabilir kaynak adları süzüldü | ✅ |
 | Proje iskeleti | klasör, git, CLAUDE.md, surec.md | oluşturuldu | ✅ |
-| Özellik haritası (`docs/ozellikler.md`) | Tüm özellikler listelensin | — | ⏳ |
+| Özellik haritası (`docs/ozellikler.md`) | Tüm özellikler listelensin | Ad düzeyi harita + 5 faz önerisi yazıldı; ⚠ işaretliler elle gözlem bekler | ✅ (faz onayı bekliyor) |
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım | — | ⏳ |
 
-Son commit: `d543144` · Testler: henüz yok
+Son commit: `ca6efcf` · Testler: henüz yok
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
-1. PDFgear özellik haritasını çıkar (REA `inspect-managed-members` çıktısı: tip/menü adları + uygulamayı elle gözlem). Çıktı: `docs/ozellikler.md`.
-2. Özellikleri aşamalara böl (Faz 1: görüntüleme/sayfa işlemleri; sonra düzenleme, OCR, dönüştürme, imza/form, koruma, sıkıştırma). Kullanıcıya onaylat.
+1. **Kullanıcıya faz sırasını onaylat** (`docs/ozellikler.md` sonu: 5 faz önerisi). Ayrıca Türkçe OCR verisi (`tur.traineddata`) PDFgear'da yok, ayrıca temin edilecek.
+2. (İsteğe bağlı) ⚠ işaretli noktaları PDFgear'ı elle açıp gözlemle.
 3. Bağımlılık lisanslarını doğrula (pypdfium2, pypdf/pikepdf, Tesseract).
 4. Uygulama iskeleti: pencere, Sözcük/Tabcel görünümü, Yardım menüsü, Hakkında.
 5. Faz 1 uygulaması + testler.
@@ -36,6 +36,7 @@ Son commit: `d543144` · Testler: henüz yok
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
 
 ## 5. Açık sorular / bekleyenler
+- Bulut/yapay zekâ özellikleri (sohbet, çeviri, çevrimiçi dönüştürme) haritada "dışarıda" bırakıldı; yerel karşılık istenirse karar verilecek.
 - Arayüz: Sözcük/Tabcel görünümü kesin mi, yoksa MS Office şeridi mi? (Kullanıcı ikisini de uygun gördü; varsayılan: Eagle Office görünümü.)
 - PDFgear'ın bazı özellikleri bulut/yapay zekâ tabanlıysa (örn. sohbet, çeviri) yerel karşılığı olup olmayacağı belirsiz; keşifte netleşecek.
 - OCR dil verisi (tessdata) kaynağı ve lisansı doğrulanacak.
