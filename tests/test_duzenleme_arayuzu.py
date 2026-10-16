@@ -18,7 +18,8 @@ from eaglepdf.ui.dialoglar import MetinPenceresi
 from eaglepdf.ui.duzenleme_arayuzu import muhur_adi
 from eaglepdf.ui.pencere import AnaPencere
 from eaglepdf.ui.sayfa_islem_dialoglari import (
-    AralikKutusu, ArkaPlanPenceresi, BoyutPenceresi, DuzlestirPenceresi, FiligranPenceresi, KirpPenceresi,
+    AralikKutusu, ArkaPlanPenceresi, BoyutPenceresi, DuzlestirPenceresi, FiligranKaldirPenceresi, FiligranPenceresi,
+    KirpPenceresi,
     MuhurPenceresi, SayfaNumarasiPenceresi, UstAltBilgiPenceresi, muhur_resmi,
 )
 from test_belge import ARIAL, pdf_yap
@@ -369,3 +370,24 @@ def test_arac_cubuklari_gorunurlugu(pencere, tmp_path):
     assert str(pencere.ayarlar.value("duzenleme_arac_goster")).lower() == "false"
     assert [m.title() for m in [a.menu() for a in pencere.menuBar().actions()]] == \
         ["&Dosya", "&Düzen", "&Görünüm", "&Açıklama", "Dü&zenle", "&Sayfa", "&Yardım"]
+
+
+def test_filigran_kaldir_arayuzden(pencere, tmp_path, app, monkeypatch):
+    b = ac(pencere, app, pdf_yap(tmp_path / "w.pdf", 3, "Merhaba dunya"))
+    dialog_yama(monkeypatch, FiligranPenceresi, lambda d: (d.metin.setText("GİZLİ"), d.aralik.tumu.setChecked(True)))
+    pencere.filigran_ac()
+    assert pencere.belge.filigran_sayfalari() == [0, 1, 2]
+    gosterilen = []
+    orijinal_init = FiligranKaldirPenceresi.__init__
+
+    def init(self, *a, **k):
+        orijinal_init(self, *a, **k)
+        gosterilen.append(a[3])
+    monkeypatch.setattr(FiligranKaldirPenceresi, "__init__", init)
+    dialog_yama(monkeypatch, FiligranKaldirPenceresi, lambda d: d.aralik.aralik_rb.setChecked(True) or d.aralik.aralik_kutu.setText("1-2"))
+    pencere.filigran_kaldir_ac()
+    assert gosterilen == [[0, 1, 2]] and pencere.belge.filigran_sayfalari() == [2]
+    assert "2 filigran kaldırıldı" in pencere.statusBar().currentMessage()
+    pencere.geri_al()
+    assert pencere.belge.filigran_sayfalari() == [0, 1, 2]
+    assert "Filigranı Kaldır…" in [e.text() for e in pencere.m_sayfa.actions()]

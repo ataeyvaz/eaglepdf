@@ -335,3 +335,47 @@ def test_islemler_kaydet_ac_gidis_donus(tmp_path):
     c = Belge.ac(hedef)
     assert c.sayfa_boyutu(0) == (560, 760) and c.sayfa_boyutu(1) == (600, 800)
     assert "TASLAK" in c._doc[0].get_text() and c.render(1, 1.0).pixel(3, 3) == (227, 242, 253)
+
+
+def sayfa_goruntusu(b: Belge, i: int):
+    px = b.render(i, 1.0)
+    return px.width, px.height, [px.pixel(x, y) for x in range(0, px.width, 7) for y in range(0, px.height, 7)]
+
+
+@pytest.mark.parametrize("donus", DONUSLER)
+def test_filigran_kaldir_eski_gorunume_doner(tmp_path, donus):
+    b = asimetrik_belge(tmp_path, donus, sayfa=3)
+    once = sayfa_goruntusu(b, 1)
+    assert b.filigran_sayfalari() == []
+    b.filigran_metin([0, 1, 2], "TASLAK", 70, "#c62828", 45, 0.3)
+    png = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 60, 30), False)
+    png.set_rect(png.irect, (0, 0, 255))
+    b.filigran_resim([1], png.tobytes("png"), 0.4)
+    assert b.filigran_sayfalari() == [0, 1, 2] and "TASLAK" in b._doc[1].get_text()
+    assert sayfa_goruntusu(b, 1) != once
+    n = b.filigranlari_kaldir([1])
+    assert n == 2 and b.filigran_sayfalari() == [0, 2]
+    assert "TASLAK" not in b._doc[1].get_text() and "MERKEZ METIN" in b._doc[1].get_text()
+    assert sayfa_goruntusu(b, 1) == once          # piksel piksel eski görünüm
+    assert "TASLAK" in b._doc[0].get_text()       # öteki sayfalara dokunulmadı
+    with pytest.raises(BelgeHatasi):
+        b.filigranlari_kaldir([1])                # artık yok
+    assert b.filigranlari_kaldir([0, 1, 2]) == 2 and b.filigran_sayfalari() == []
+
+
+def test_filigran_kaydet_ac_sonra_kaldir_ve_geri_al(tmp_path):
+    b = asimetrik_belge(tmp_path, 0, sayfa=2)
+    once = sayfa_goruntusu(b, 0)
+    with pytest.raises(BelgeHatasi):
+        b.filigranlari_kaldir([0])                # hiç filigran eklenmemiş belge
+    b.filigran_metin([0, 1], "GİZLİ", 80, aci=30)
+    b.filigran_metin([0], "KOPYA", 40, aci=0)     # aynı sayfada iki filigran
+    hedef = tmp_path / "f.pdf"
+    b.kaydet(hedef)
+    c = Belge.ac(hedef)
+    assert c.filigran_sayfalari() == [0, 1]
+    assert c.filigranlari_kaldir([0, 1]) == 3
+    assert sayfa_goruntusu(c, 0) == once
+    assert c.geri_al() and c.filigran_sayfalari() == [0, 1]
+    c.kaydet(tmp_path / "g.pdf")
+    assert Belge.ac(tmp_path / "g.pdf").filigran_sayfalari() == [0, 1]

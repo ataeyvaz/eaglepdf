@@ -17,7 +17,7 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Faz 2 arayüz | ikinci araç çubuğu (14 araç), seç/taşı/renk/metin düzenle/sil, açıklama paneli (süz, toplu sil), form doldurma (sayfa üstü kutular), görsel imza (çiz/yaz/resim, kayıtlı imzalar), bağlantı ekle/sil/tıkla, düzenlenebilir yer imleri, geri al/yinele | 47 test geçti; gerçek ekranda görüldü | ✅ |
 | Faz 1: belge sekmeleri | çoklu belge | yapılmadı (bkz. Kararlar) | ⏸ |
 
-Testler: `.venv\Scripts\python -m pytest` (90 geçti)
+Testler: `.venv\Scripts\python -m pytest` (96 geçti)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. **Faz 4'e başla:** dönüştürme ve sıkıştırma (PDF→resim, PDF→Word/Excel/PPT/metin/HTML, resim/Word/Excel→PDF, sıkıştır, karşılaştır, tarayıcıdan ekle, toplu işlemler).
@@ -48,8 +48,9 @@ Testler: `.venv\Scripts\python -m pytest` (90 geçti)
 - 2026-10-16: **Türkçe metin gömme:** PDF yerleşik yazı tipleri ş/ğ/ı/İ'yi desteklemez; metin kutusu/filigran vb. için Noto Sans (`pymupdf-fonts`, SIL OFL) gömülür ve metin kutusunun görünümü (AP) elle üretilir. Geri al/yinele: değişiklik öncesi belge baytları (30 adım / 300 MB sınırı).
 - 2026-10-16: Kayıtta gömülü yazı tipleri belgenin **kopyasında** alt kümelenir (506 KB → ~49 KB); çalışan belge tam yazı tipiyle kalır.
 - 2026-10-16: Görsel imza bir **resim**dir (sertifikasız); sertifikalı dijital imza Faz 5.
-- 2026-10-16: **Metin düzenleme sınırı:** orijinal yazı tipi korunamaz; paragraf silinip Noto Sans ile yeniden yazılır (döndürülmüş sayfa ve taranmış sayfada yok) — kullanıcıya yardımda açıkça yazıldı.
+- 2026-10-16: **Metin düzenleme (sonra çözeceğimiz yer):** orijinal yazı tipi şimdilik korunmuyor; paragraf silinip Noto Sans ile yeniden yazılır (döndürülmüş sayfa ve taranmış sayfada yok) — kullanıcıya yardımda açıkça yazıldı.
 - 2026-10-16: Resim ve mühür **Stamp ek açıklaması** olarak eklenir (taşınır/boyutlandırılır, Düzleştir ile sayfaya işlenir); saydam PNG için görünüm (AP) elle kurulur.
+- 2026-10-16: Kullanıcı, eksikleri anlatırken "sınırlar" ifadesinden rahatsız oldu → "sonra çözeceğimiz noktalar" dili kullanılır (CLAUDE.md/surec.md başlıkları buna göre değişti).
 - 2026-10-16: **Arayüz vurgu rengi KIRMIZI** (`#c62828`, `ui/theme.py`); yerleşim Eagle Office düzeniyle aynı (başlık şeridi, menü, araç çubuğu) — kullanıcı isteği. Sözcük/Tabcel'in mavisinden bilerek ayrılır.
 - 2026-10-16: Kayıt davranışı: Kaydet açık dosyanın üzerine yazar ama onay sorar; Farklı Kaydet varsayılan önerilir; her kayıt geçici dosya → yerine koy.
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
@@ -68,10 +69,10 @@ Testler: `.venv\Scripts\python -m pytest` (90 geçti)
 | Tam çıktı (ilk tarama) | `C:\Users\Ata\.claude\projects\C--Users-Ata\7032db82-389f-4606-af41-6141ec5d57f6\tool-results\bgi463nqm.txt` |
 | Kardeş projeler | `Desktop\sozcuk`, `Desktop\tabcel` (arayüz ve yapı referansı) |
 
-## 7. Bilinen sorunlar ve tuzaklar
+## 7. Sonra çözülecek noktalar ve tuzaklar
 - PyMuPDF `add_stamp_annot` verilen dikdörtgeni varsayılan damganın en/boy oranına uydurur ve PNG saydamlığını yok sayar → `muhur_ekle` kutuyu geri yükler, görünümü kendi kurar.
 - Döndürülmüş sayfalarda metin/resim eklerken `rotate=sayfa_dönüşü` (ters değil) doğru yöndür; 4 dönüşte testli. Kırpmada kırpma kutusu başlangıcı eklenmeli.
-- Filigran/üstbilgi sayfa içeriğine yazılır; ayrı bir 'filigranı kaldır' yok (Geri Al kullanılır).
+- Filigran: isteğe bağlı içerik katmanına (OCG "EaglePDF Filigran") etiketlenir; **Sayfa → Filigranı Kaldır…** kayıttan sonra da çalışır (metin: BDC…EMC bloğu, resim: OC'li XObject çağrısı ayıklanır). Başka programlarla eklenmiş filigranlar tanınmaz. Üstbilgi/altbilgi/sayfa numarası için henüz 'kaldır' yok; Geri Al kullanılır (sonra eklenebilir).
 - Düzleştirme tüm belgeyi etkiler (sayfa bazlı değil); sayfa boyutu değişirken yalnızca o sayfaların açıklamaları işlenir.
 - PyMuPDF: `add_freetext_annot` kenarlık rengini yalnızca zengin metinde kabul eder → kenarlık `EaglePDFKenar` anahtarıyla saklanıp kendi görünüm akışımızda çizilir; dolgu rengi `/C` içindedir (`colors['stroke']`).
 - PyMuPDF ek açıklama nesnesi sayfaya zayıf bağlıdır: sayfa nesnesi canlı tutulmazsa `ReferenceError` (bkz. `_annot`).

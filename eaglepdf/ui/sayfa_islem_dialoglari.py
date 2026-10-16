@@ -313,6 +313,21 @@ class FiligranPenceresi(_TemelPencere):
         return {**ortak, "tur": "resim", "png": png, "genislik_orani": self.genislik.value() / 100}
 
 
+class FiligranKaldirPenceresi(_TemelPencere):
+    def __init__(self, sayfa_sayisi, gecerli, secili, filigranli: list[int], parent=None):
+        super().__init__("Filigranı Kaldır", "Kaldır", sayfa_sayisi, gecerli, secili, parent=parent)
+        if filigranli:
+            ozet = ", ".join(str(i + 1) for i in filigranli[:12]) + (" …" if len(filigranli) > 12 else "")
+            self.govde.addWidget(QLabel(f"Filigran bulunan sayfalar ({len(filigranli)}): {ozet}"))
+        else:
+            self.govde.addWidget(QLabel("Bu belgede, bu uygulamayla eklenmiş filigran görünmüyor."))
+        self.govde.addWidget(QLabel("Seçilen sayfalardaki tüm filigranlar (metin ve resim) kaldırılır.\n"
+                                    "Başka programlarla eklenmiş filigranlara dokunulmaz."))
+
+    def degerler(self) -> dict:
+        return {"sayfalar": self.secilen}
+
+
 class ArkaPlanPenceresi(_TemelPencere):
     def __init__(self, sayfa_sayisi, gecerli, secili, parent=None):
         super().__init__("Arka Plan", "Uygula", sayfa_sayisi, gecerli, secili, parent=parent)

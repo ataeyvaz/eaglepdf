@@ -43,5 +43,5 @@ surec.md  CLAUDE.md  README.md  requirements.txt
 - Test: `.venv\Scripts\python -m pytest`
 - Çalıştır: `.venv\Scripts\python main.py`
 
-## Bilinen sınırlar
-- Henüz kod yok; keşif aşamasında.
+## Sonra çözülecek noktalar
+Ayrıntı ve güncel liste: `surec.md` §7. Kısaca: belge sekmeleri, taranmış sayfalarda metin (OCR gelince), çizim/ok/vurgu taşıma.

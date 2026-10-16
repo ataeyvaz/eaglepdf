@@ -76,7 +76,7 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 
 - **Kırp…:** sayfanın kenarlarından mm, cm, inç ya da pt olarak kırpar; ya da içeriğe göre otomatik kırpar. İçerik silinmez, görünen alan daralır; **Kırpmayı Kaldır** eski haline döndürür.
 - **Sayfa Boyutu…:** A3, A4, A5, Letter, Legal ya da özel boyut. İçerik ölçeklenip ortalanır. Bu sayfalardaki ek açıklamalar ve form alanları sayfaya işlenir; bağlantılar korunmaz.
-- **Filigran…:** metin (boyut, renk, eğim, saydamlık) ya da resim; içeriğin arkasına ya da üstüne. Filigran sayfa içeriğine yazılır; geri almak için Ctrl+Z kullanın.
+- **Filigran…:** metin (boyut, renk, eğim, saydamlık) ya da resim; içeriğin arkasına ya da üstüne. Filigranlar ayrı bir katmana işaretlenir; dosyayı kaydedip kapatsanız bile **Sayfa → Filigranı Kaldır…** ile (seçtiğiniz sayfalardan) kaldırabilirsiniz. Bu özellik yalnızca {APP_NAME} ile eklenen filigranları tanır.
 - **Arka Plan…:** düz renk ya da resim; içeriğin altında kalır.
 - **Üstbilgi / Altbilgi…:** sol, orta, sağ için üç ayrı metin. Yer tutucular: `{sayfa}` (sayfa numarası), `{toplam}`, `{tarih}`, `{dosya}`.
 - **Sayfa Numarası Ekle…:** altı konumdan biri; biçimler `{n}`, `Sayfa {n}`, `{n} / {toplam}`… ve başlangıç numarası seçilebilir.

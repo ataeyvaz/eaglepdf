@@ -17,6 +17,7 @@ from .hatalar import BelgeHatasi
 
 EN_AZ_SAYFA_BOYUTU = 20.0
 EN_COK_SAYFA_BOYUTU = 14400.0
+FILIGRAN_KATMANI = "EaglePDF Filigran"  # filigranlar bu isteğe bağlı içerik katmanına etiketlenir (sonradan kaldırılabilsin)
 KONUMLAR = ("ust-sol", "ust-orta", "ust-sag", "alt-sol", "alt-orta", "alt-sag")
 SAYFA_NO_BICIMLERI = ("{n}", "Sayfa {n}", "{n} / {toplam}", "Sayfa {n} / {toplam}", "- {n} -")
 MUHUR_METINLERI = ("ONAYLANDI", "REDDEDİLDİ", "TASLAK", "GİZLİ", "ACİL", "KOPYA", "FİNAL", "İNCELENDİ", "İMZALANDI")
@@ -145,6 +146,79 @@ class DuzenlemeIslemleri:
                 kaynak.close()
 
     # --- filigran, arka plan ---
+    def _filigran_katmani(self, olustur: bool = True) -> int | None:
+        for xref, bilgi in (self._doc.get_ocgs() or {}).items():
+            if bilgi.get("name") == FILIGRAN_KATMANI:
+                return xref
+        return self._doc.add_ocg(FILIGRAN_KATMANI, on=True) if olustur else None
+
+    def _filigran_blok_adlari(self, p: pymupdf.Page, oc: int) -> list[str]:
+        """Sayfanın kaynaklarında filigran katmanına bağlı etiket adları (örn. MC0)."""
+        tur, deger = self._doc.xref_get_key(p.xref, "Resources/Properties")
+        if tur == "null":
+            return []
+        if tur == "xref":
+            deger = self._doc.xref_object(int(deger.split()[0]), compressed=True)
+        return [m.group(1) for m in re.finditer(r"/([^\s/<>\[\]]+)\s+(\d+)\s+0\s+R", deger) if int(m.group(2)) == oc]
+
+    def _filigran_resim_adlari(self, p: pymupdf.Page, oc: int) -> list[str]:
+        """Sayfadaki, filigran katmanına bağlı resim nesnelerinin kaynak adları (örn. fzImg0)."""
+        adlar = []
+        for tup in p.get_images(full=True):
+            tur, deger = self._doc.xref_get_key(tup[0], "OC")
+            if tur == "xref" and int(deger.split()[0]) == oc:
+                adlar.append(tup[7])
+        return adlar
+
+    def _filigran_desenleri(self, p: pymupdf.Page, oc: int) -> list[re.Pattern]:
+        """İçerik akışında filigrana ait blokları bulan düzenli ifadeler (metin: BDC…EMC, resim: q…cm /ad Do Q)."""
+        desenler = []
+        metin_adlari = self._filigran_blok_adlari(p, oc)
+        if metin_adlari:
+            desenler.append(re.compile(rf"/OC\s*/(?:{'|'.join(map(re.escape, metin_adlari))})\s*BDC.*?EMC", re.S))
+        resim_adlari = self._filigran_resim_adlari(p, oc)
+        if resim_adlari:
+            desenler.append(re.compile(
+                rf"q\s+(?:[-+\d.eE]+\s+){{6}}cm\s*/(?:{'|'.join(map(re.escape, resim_adlari))})\s+Do\s*Q"))
+        return desenler
+
+    def filigran_sayfalari(self) -> list[int]:
+        """Filigran içeren sayfalar (0 tabanlı)."""
+        oc = self._filigran_katmani(False)
+        if oc is None:
+            return []
+        sonuc = []
+        for i in range(self._doc.page_count):
+            p = self._doc[i]
+            desenler = self._filigran_desenleri(p, oc)
+            if desenler and any(d.search(self._doc.xref_stream(x).decode("latin-1"))
+                                for d in desenler for x in p.get_contents()):
+                sonuc.append(i)
+        return sonuc
+
+    @geri_alinabilir
+    def filigranlari_kaldir(self, sayfalar: list[int]) -> int:
+        """Bu uygulamayla eklenmiş tüm filigranları seçilen sayfalardan siler; silinen filigran sayısını döndürür."""
+        oc = self._filigran_katmani(False)
+        if oc is None:
+            raise BelgeHatasi("Belgede filigran yok.")
+        toplam = 0
+        for i in _bos_degil(sayfalar):
+            p = self._sayfa_nesnesi(i)
+            desenler = self._filigran_desenleri(p, oc)
+            for x in p.get_contents():
+                veri = self._doc.xref_stream(x).decode("latin-1")
+                n = 0
+                for d in desenler:
+                    veri, k = d.subn("", veri)
+                    n += k
+                if n:
+                    self._doc.update_stream(x, veri.encode("latin-1"))
+                    toplam += n
+        if not toplam:
+            raise BelgeHatasi("Seçilen sayfalarda filigran bulunamadı.")
+        return toplam
+
     @geri_alinabilir
     def filigran_metin(self, sayfalar: list[int], metin: str, boyut: float = 60, renk="#808080", aci: float = 45,
                        opaklik: float = 0.3, kalin: bool = True, on_plan: bool = True):
@@ -154,6 +228,7 @@ class DuzenlemeIslemleri:
         if not 0 < opaklik <= 1:
             raise BelgeHatasi("Saydamlık 0 ile 1 arasında olmalı.")
         genislik = self._metin_genisligi(metin, boyut, kalin)
+        katman = self._filigran_katmani()
         for i in _bos_degil(sayfalar):
             p = self._sayfa_nesnesi(i)
             r = p.rect
@@ -166,7 +241,7 @@ class DuzenlemeIslemleri:
             merkez_gercek = merkez * p.derotation_matrix
             p.insert_text(nokta, metin, fontname=ad, fontsize=boyut, color=renk_rgb(renk), fill_opacity=opaklik,
                           stroke_opacity=opaklik, rotate=p.rotation,
-                          morph=(merkez_gercek, pymupdf.Matrix(aci)), overlay=not on_plan)
+                          morph=(merkez_gercek, pymupdf.Matrix(aci)), overlay=not on_plan, oc=katman)
 
     @geri_alinabilir
     def filigran_resim(self, sayfalar: list[int], png: bytes, genislik_orani: float = 0.5, on_plan: bool = True):
@@ -175,6 +250,7 @@ class DuzenlemeIslemleri:
             raise BelgeHatasi("Genişlik oranı 0 ile 1 arasında olmalı.")
         pix = pymupdf.Pixmap(png)
         oran = pix.height / pix.width
+        katman = self._filigran_katmani()
         for i in _bos_degil(sayfalar):
             p = self._sayfa_nesnesi(i)
             r = p.rect
@@ -182,7 +258,7 @@ class DuzenlemeIslemleri:
             y = g * oran
             kutu = pymupdf.Rect((r.width - g) / 2, (r.height - y) / 2, (r.width + g) / 2, (r.height + y) / 2)
             p.insert_image(kutu * p.derotation_matrix, stream=png, keep_proportion=True,
-                           rotate=p.rotation, overlay=not on_plan)
+                           rotate=p.rotation, overlay=not on_plan, oc=katman)
 
     @geri_alinabilir
     def arka_plan(self, sayfalar: list[int], renk=None, png: bytes | None = None):

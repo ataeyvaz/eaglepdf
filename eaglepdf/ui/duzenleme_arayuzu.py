@@ -19,7 +19,7 @@ from .dialoglar import MetinPenceresi, png_baytlari
 from .goruntuleyici import ARAC_DUZENLE
 from .sayfa_islem_dialoglari import (
     MUHUR_RENKLERI, ArkaPlanPenceresi, BoyutPenceresi, DuzlestirPenceresi, FiligranPenceresi, KirpPenceresi,
-    MuhurPenceresi, SayfaNumarasiPenceresi, UstAltBilgiPenceresi, muhur_resmi,
+    FiligranKaldirPenceresi, MuhurPenceresi, SayfaNumarasiPenceresi, UstAltBilgiPenceresi, muhur_resmi,
 )
 
 VARSAYILAN_MUHUR_GENISLIK = 160.0   # pt
@@ -62,6 +62,7 @@ class DuzenlemeArayuzu:
         self.e_kirpma_kaldir = self._eylem("Kırpmayı Kaldır", self.kirpmayi_kaldir)
         self.e_boyut = self._eylem("Sayfa Boyutu…", self.boyut_ac, simge="boyut")
         self.e_filigran = self._eylem("Filigran…", self.filigran_ac, simge="filigran")
+        self.e_filigran_kaldir = self._eylem("Filigranı Kaldır…", self.filigran_kaldir_ac)
         self.e_arka_plan = self._eylem("Arka Plan…", self.arka_plan_ac, simge="arkaplan")
         self.e_ustalt = self._eylem("Üstbilgi / Altbilgi…", self.ustalt_ac, simge="ustalt")
         self.e_numara = self._eylem("Sayfa Numarası Ekle…", self.numara_ac, simge="numara")
@@ -81,7 +82,8 @@ class DuzenlemeArayuzu:
 
         # Sayfa menüsüne
         self.m_sayfa.addSeparator()
-        for e in (self.e_kirp, self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_arka_plan, self.e_ustalt, self.e_numara):
+        for e in (self.e_kirp, self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_filigran_kaldir, self.e_arka_plan,
+                  self.e_ustalt, self.e_numara):
             self.m_sayfa.addAction(e)
 
         # üçüncü araç çubuğu
@@ -107,8 +109,8 @@ class DuzenlemeArayuzu:
             self.duzenleme_arac.addAction(e)
 
         self._belge_eylemleri += [self.e_resim, self.e_ozel_muhur, self.e_ara_sil, self.e_duzlestir, self.e_kirp,
-                                  self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_arka_plan, self.e_ustalt,
-                                  self.e_numara, a["metin_duzenle"], a["resim"], a["muhur"], a["redaction"]]
+                                  self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_filigran_kaldir, self.e_arka_plan,
+                                  self.e_ustalt, self.e_numara, a["metin_duzenle"], a["resim"], a["muhur"], a["redaction"]]
         self._muhur_dugme = muhur_dugme
         # araç çubuklarını göster/gizle
         self.e_ek_arac = self._eylem("Açıklama Araç Çubuğu", lambda: self._arac_cubugu_ayarla("ek_arac_goster", self.ek_arac, self.e_ek_arac),
@@ -184,6 +186,16 @@ class DuzenlemeArayuzu:
         else:
             self._uygula(lambda: self.belge.filigran_resim(v["sayfalar"], v["png"], v["genislik_orani"], v["on_plan"]),
                          "Filigran eklendi.")
+
+    def filigran_kaldir_ac(self):
+        if not self.belge:
+            return
+        d = FiligranKaldirPenceresi(*self._dialog_bilgisi(), self.belge.filigran_sayfalari(), parent=self)
+        if d.exec():
+            sayfalar = d.degerler()["sayfalar"]
+            adet = []
+            if self._uygula(lambda: adet.append(self.belge.filigranlari_kaldir(sayfalar))):
+                self.statusBar().showMessage(f"{adet[0]} filigran kaldırıldı.", 6000)
 
     def arka_plan_ac(self):
         if not self.belge:
