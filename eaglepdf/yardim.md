@@ -62,6 +62,27 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 - **Görsel imza:** Açıklama → İmza → Yeni İmza Oluştur… Üç yol vardır: *Çiz* (fareyle), *Yaz* (adınız el yazısı biçiminde) ve *Resimden* (taranmış imza; beyaz arka plan kaldırılabilir). İmzalar yalnızca bu bilgisayarda saklanır, İmza menüsünden seçilir ve silinir. Yerleştirmek için sayfada imzanın yerini sürükleyin (tıklarsanız varsayılan boyutta konur).
 - Bu imza bir **resimdir**, sertifikalı dijital imza değildir; hukuki doğrulama sağlamaz. Sertifikalı imza ileride eklenecek.
 
+<!-- konu: duzenleme | Metin, Resim, Mühür ve Kalıcı Silme -->
+**Düzenle** menüsü ve üçüncü araç çubuğu belge içeriğini değiştirir.
+
+- **Metni Düzenle:** aracı seçip düzenlemek istediğiniz paragrafa tıklayın; metni, yazı boyutunu ve kalın/italik seçeneğini değiştirebilirsiniz. Eski metin silinir, yenisi aynı yere **Noto Sans** yazı tipiyle yazılır; *orijinal yazı tipi korunamaz*. Yeni metin sığmazsa yazı küçülür. Döndürülmüş sayfalarda ve taranmış (resim) sayfalarda çalışmaz.
+- **Resim Ekle…:** bir resim dosyası seçin, sonra sayfada yerini sürükleyin (ya da tıklayın). Resim ek açıklama gibi davranır: **Seç / Düzenle** aracıyla taşıyabilir, sağ alt köşesindeki tutamaçtan boyutlandırabilir, Del ile silebilirsiniz.
+- **Mühür:** hazır yazı mührü (ONAYLANDI, REDDEDİLDİ, TASLAK, GİZLİ, ACİL, KOPYA, FİNAL, İNCELENDİ, İMZALANDI) ya da **Özel Mühür Oluştur…** ile kendi mührünüz (metin, ikinci satır, renk, çerçeve). Özel mühürler bu bilgisayarda saklanır. Resim gibi taşınır ve boyutlandırılır.
+- **Kalıcı Sil (Redaction):** silinecek alanı sürükleyerek seçin, onaylayın. Alandaki metin, resim pikselleri ve çizgiler **gerçekten** silinir (yalnızca üstü boyanmaz); kaydedilen dosyada geri getirilemez. Gizli kalması gereken bilgiler için bunu kullanın, siyah kutu çizmeyi değil. **Metni Ara ve Kalıcı Sil…** bir metnin belgedeki her geçişini siler.
+- **Düzleştir…:** ek açıklamaları ve/ya form alanlarını sayfa içeriğine işler; bundan sonra düzenlenemezler (başka okuyucularda da silinemezler).
+
+<!-- konu: sayfa-duzeni | Kırp, Boyut, Filigran, Arka Plan, Üstbilgi ve Sayfa Numarası -->
+**Sayfa** menüsündeki bu işlemlerin hepsinde pencerenin altında “Sayfalar” bölümü vardır: tüm sayfalar, geçerli sayfa, küçük resim panelinde seçtikleriniz ya da bir aralık (örn. `1-3, 7, 10-`); ayrıca yalnızca tek ya da yalnızca çift numaralı sayfalar.
+
+- **Kırp…:** sayfanın kenarlarından mm, cm, inç ya da pt olarak kırpar; ya da içeriğe göre otomatik kırpar. İçerik silinmez, görünen alan daralır; **Kırpmayı Kaldır** eski haline döndürür.
+- **Sayfa Boyutu…:** A3, A4, A5, Letter, Legal ya da özel boyut. İçerik ölçeklenip ortalanır. Bu sayfalardaki ek açıklamalar ve form alanları sayfaya işlenir; bağlantılar korunmaz.
+- **Filigran…:** metin (boyut, renk, eğim, saydamlık) ya da resim; içeriğin arkasına ya da üstüne. Filigran sayfa içeriğine yazılır; geri almak için Ctrl+Z kullanın.
+- **Arka Plan…:** düz renk ya da resim; içeriğin altında kalır.
+- **Üstbilgi / Altbilgi…:** sol, orta, sağ için üç ayrı metin. Yer tutucular: `{sayfa}` (sayfa numarası), `{toplam}`, `{tarih}`, `{dosya}`.
+- **Sayfa Numarası Ekle…:** altı konumdan biri; biçimler `{n}`, `Sayfa {n}`, `{n} / {toplam}`… ve başlangıç numarası seçilebilir.
+
+Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınabilir.
+
 <!-- konu: kisayollar | Klavye Kısayolları -->
 | Kısayol | İş |
 |---|---|

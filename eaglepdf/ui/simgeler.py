@@ -49,6 +49,17 @@ _YOLLAR = {
     "yinele": '<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>',
     "renk": '<circle cx="12" cy="12" r="8"/><circle cx="8.5" cy="10" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="15.5" cy="10" r="1"/>',
     "kalinlik": '<path d="M4 6h16M4 12h16M4 19h16"/>',
+    "duzenle_metin": '<path d="M4 6h10M9 6v10M14 18l1-3 5-5 2 2-5 5z"/>',
+    "resim": '<rect x="3" y="5" width="18" height="14" rx="1.5"/><circle cx="9" cy="10" r="1.5"/><path d="M4 18l5-5 4 4 3-3 4 4"/>',
+    "muhur": '<path d="M8 4h8v6l2 3H6l2-3z"/><path d="M5 17h14v3H5z"/>',
+    "redaction": '<path d="M4 12h16" stroke-width="7"/>',
+    "duzlestir": '<path d="M12 4l9 5-9 5-9-5z"/><path d="M3 14l9 5 9-5"/>',
+    "kirp": '<path d="M7 3v14h14M3 7h14v14"/>',
+    "boyut": '<path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/>',
+    "filigran": '<path d="M5 19L12 5l7 14M8 14h8"/>',
+    "arkaplan": '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 14l5-4 4 3 3-2 4 3"/>',
+    "ustalt": '<rect x="5" y="3" width="14" height="18" rx="1"/><path d="M5 7h14M5 17h14"/>',
+    "numara": '<path d="M7 5l-2 5h5M9 5l-2 14M15 5l-2 14M19 5l-2 14M5 15h14"/>',
     "form": '<rect x="4" y="5" width="16" height="14" rx="1.5"/><path d="M8 10h8M8 14h5"/>',
 }
 

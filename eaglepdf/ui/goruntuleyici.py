@@ -19,7 +19,10 @@ EN_AZ_OLCEK, EN_COK_OLCEK = 0.1, 6.0
 ARAC_EL, ARAC_SEC, ARAC_DUZENLE = "el", "sec", "duzenle"
 ISARET_ARACLARI = ("vurgu", "alti", "ustu", "dalga")
 SEKIL_ARACLARI = ("cizgi", "ok", "dikdortgen", "elips")
-SURUKLE_ARACLARI = SEKIL_ARACLARI + ("metin", "baglanti", "imza")
+SURUKLE_ARACLARI = SEKIL_ARACLARI + ("metin", "baglanti", "imza", "resim", "muhur", "redaction")
+TIKLAMA_ARACLARI = ("metin", "imza", "resim", "muhur")  # sürüklemeden tıklanınca varsayılan boyutla yerleştirilenler
+BOYUTLANDIRILABILIR = {"Stamp", "FreeText", "Square", "Circle"}
+TUTAMAC = 8  # px: sağ alt köşe boyutlandırma tutamacı
 MOD_SUREKLI, MOD_TEK = "sureklu", "tek"
 TIKLAMA_ESIGI = 4  # px: bundan az hareket tıklamadır
 
@@ -46,6 +49,7 @@ class SayfaEtiketi(QLabel):
         self.onizleme: tuple | None = None  # sürüklenen çizim/şekil önizlemesi
         self.secili_ek: tuple[float, float, float, float] | None = None
         self.tasima = (0.0, 0.0)
+        self.tutamac = False  # seçili öğe boyutlandırılabilir mi
         self.form_widgetlari: list[QWidget] = []
         self.olcek = 1.0
         self.gece = False
@@ -72,6 +76,10 @@ class SayfaEtiketi(QLabel):
             p.setPen(kalem)
             p.setBrush(Qt.NoBrush)
             p.drawRect(QRectF((x0 + dx) * o - 3, (y0 + dy) * o - 3, (x1 - x0) * o + 6, (y1 - y0) * o + 6))
+            if self.tutamac:
+                p.setPen(Qt.NoPen)
+                p.setBrush(QColor(theme.ACCENT))
+                p.drawRect(QRectF((x1 + dx) * o - TUTAMAC / 2 + 3, (y1 + dy) * o - TUTAMAC / 2 + 3, TUTAMAC, TUTAMAC))
         if self.onizleme:
             self._onizleme_ciz(p)
         p.setPen(QColor(theme.BORDER))
@@ -97,7 +105,13 @@ class SayfaEtiketi(QLabel):
             p.drawEllipse(r)
         elif tur == "dikdortgen":
             p.drawRect(r)
-        else:  # metin / bağlantı / imza: kesikli kutu
+        elif tur == "redaction":
+            koyu = QColor("#000000")
+            koyu.setAlpha(110)
+            p.setPen(QPen(QColor("#000000"), 1.5, Qt.DashLine))
+            p.setBrush(koyu)
+            p.drawRect(r)
+        else:  # metin / bağlantı / imza / resim / mühür: kesikli kutu
             p.setPen(QPen(QColor(theme.ACCENT), 1.5, Qt.DashLine))
             p.drawRect(r)
 
@@ -153,6 +167,7 @@ class Goruntuleyici(QScrollArea):
         self._cizim: list[tuple[float, float]] = []
         self._secili_ek = None
         self._tasinan = None
+        self._boyutlanan = None
         self.setWidgetResizable(False)
         self.setAlignment(Qt.AlignHCenter)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -221,7 +236,7 @@ class Goruntuleyici(QScrollArea):
             imlec = Qt.OpenHandCursor
         elif self._arac in (ARAC_SEC,) + ISARET_ARACLARI:
             imlec = Qt.IBeamCursor
-        elif self._arac == ARAC_DUZENLE:
+        elif self._arac in (ARAC_DUZENLE, "metin_duzenle"):
             imlec = Qt.ArrowCursor
         else:
             imlec = Qt.CrossCursor
@@ -302,6 +317,7 @@ class Goruntuleyici(QScrollArea):
     def _etiket_ek_durumu(self, e: SayfaEtiketi):
         if self._secili_ek and self._secili_ek.sayfa == e.indeks:
             e.secili_ek = self._secili_ek.rect
+            e.tutamac = self._secili_ek.tur in BOYUTLANDIRILABILIR
 
     def _satir_no(self, sayfa: int) -> int:
         return sayfa // self._sutun
@@ -526,9 +542,13 @@ class Goruntuleyici(QScrollArea):
             etiket.onizleme = (arac, (self._bas_nokta, self._bas_nokta), self.renk, self.kalinlik)
         elif arac == ARAC_DUZENLE:
             self.setFocus()
-            ek = self.belge.ek_bul(etiket.indeks, self._bas_nokta)
-            self._ek_sec(ek)
-            self._tasinan = ek if ek and ek.tur in TASINABILIR else None
+            self._boyutlanan = self._tutamac_altinda(etiket, self._bas_nokta)
+            if self._boyutlanan is not None:
+                self._tasinan = None
+            else:
+                ek = self.belge.ek_bul(etiket.indeks, self._bas_nokta)
+                self._ek_sec(ek)
+                self._tasinan = ek if ek and ek.tur in TASINABILIR else None
         etiket.update()
 
     def _fare_hareket(self, etiket, olay):
@@ -557,6 +577,10 @@ class Goruntuleyici(QScrollArea):
                 etiket.update()
         elif arac in SURUKLE_ARACLARI and etiket.onizleme:
             etiket.onizleme = (arac, (self._bas_nokta, nokta), self.renk, self.kalinlik)
+            etiket.update()
+        elif arac == ARAC_DUZENLE and self._boyutlanan is not None:
+            x0, y0, _x1, _y1 = self._boyutlanan.rect
+            etiket.secili_ek = (x0, y0, max(nokta[0], x0 + 8), max(nokta[1], y0 + 8))
             etiket.update()
         elif arac == ARAC_DUZENLE and self._tasinan is not None:
             etiket.tasima = (nokta[0] - self._bas_nokta[0], nokta[1] - self._bas_nokta[1])
@@ -598,10 +622,19 @@ class Goruntuleyici(QScrollArea):
         elif arac in SURUKLE_ARACLARI:
             etiket.onizleme = None
             etiket.update()
-            if tiklama and arac in ("metin", "imza"):
+            if tiklama and arac in TIKLAMA_ARACLARI:
                 self.aracEylemi.emit(arac, sayfa, (bas_nokta, None))
             elif not tiklama:
                 self.aracEylemi.emit(arac, sayfa, (bas_nokta, nokta))
+        elif arac == "metin_duzenle" and tiklama:
+            self.aracEylemi.emit("metin_duzenle", sayfa, bas_nokta)
+        elif arac == ARAC_DUZENLE and self._boyutlanan is not None:
+            ek, self._boyutlanan = self._boyutlanan, None
+            yeni = etiket.secili_ek
+            etiket.secili_ek = ek.rect
+            etiket.update()
+            if not tiklama and yeni:
+                self.aracEylemi.emit("boyutla", sayfa, (ek.xref, yeni))
         elif arac == ARAC_DUZENLE and self._tasinan is not None:
             dx, dy = etiket.tasima
             etiket.tasima = (0.0, 0.0)
@@ -609,6 +642,14 @@ class Goruntuleyici(QScrollArea):
             if not tiklama:
                 self.aracEylemi.emit("tasi", sayfa, (tasinan.xref, dx, dy))
             etiket.update()
+
+    def _tutamac_altinda(self, etiket: SayfaEtiketi, nokta: tuple[float, float]):
+        """Seçili, boyutlandırılabilir öğenin sağ alt tutamacının üzerindeyse o öğeyi döndürür."""
+        ek = self._secili_ek
+        if not ek or ek.sayfa != etiket.indeks or ek.tur not in BOYUTLANDIRILABILIR:
+            return None
+        pay = (TUTAMAC + 6) / self._olcek
+        return ek if abs(nokta[0] - ek.rect[2]) <= pay and abs(nokta[1] - ek.rect[3]) <= pay else None
 
     def _cift_tik(self, etiket, olay):
         if self._arac == ARAC_DUZENLE and self.belge:

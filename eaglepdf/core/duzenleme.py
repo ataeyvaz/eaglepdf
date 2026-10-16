@@ -292,6 +292,7 @@ class DuzenlemeIslemleri:
         self._doc.delete_page(self._doc.page_count - 1)
         p = self._sayfa_nesnesi(sayfa)  # sayfa ekleme/silme eski sayfa nesnelerini geçersiz kılar
         a = p.add_stamp_annot(r, stamp=0)
+        a.set_rect(r)  # PyMuPDF dikdörtgeni varsayılan damganın en/boy oranına uydurur; istenen kutuyu geri yükle
         ap = self._doc.xref_get_key(a.xref, "AP/N")
         ap_xref = int(ap[1].split()[0])
         w, h = r.width, r.height

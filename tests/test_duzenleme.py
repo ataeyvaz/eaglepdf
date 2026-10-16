@@ -262,14 +262,15 @@ def test_duzlestir(tmp_path):
 
 
 def saydam_png() -> bytes:
-    pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 100, 40), False)
-    pix.set_rect(pix.irect, (220, 0, 0))
-    pix = pymupdf.Pixmap(pix, 1)  # alfa kanalı ekle
-    pix.clear_with(0)
-    kare = pymupdf.IRect(40, 10, 60, 30)
+    """100×40 kırmızı resim; yalnızca ortadaki 20×20 kare opak, gerisi tamamen saydam."""
+    rgb = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 100, 40), False)
+    rgb.set_rect(rgb.irect, (220, 0, 0))
+    alfa = bytearray(100 * 40)
     for y in range(10, 30):
         for x in range(40, 60):
-            pix.set_pixel(x, y, (220, 0, 0, 255))
+            alfa[y * 100 + x] = 255
+    pix = pymupdf.Pixmap(rgb, 1)
+    pix.set_alpha(bytes(alfa), premultiply=0)
     return pix.tobytes("png")
 
 

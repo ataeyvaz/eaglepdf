@@ -15,6 +15,7 @@ from ..core import belge as belge_modulu
 from ..core.belge import Belge, BelgeHatasi, ParolaGerekli
 from . import simgeler, theme
 from .aciklama_arayuzu import AciklamaArayuzu
+from .duzenleme_arayuzu import DuzenlemeArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
 from .hakkinda import HakkindaPenceresi
 from .paneller import KucukResimler, YerImleri
@@ -54,7 +55,7 @@ class SayfaKutusu(QLineEdit):
         self.valueChanged.emit(v)
 
 
-class AnaPencere(AciklamaArayuzu, QMainWindow):
+class AnaPencere(DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
         self.belge: Belge | None = None
@@ -209,7 +210,7 @@ class AnaPencere(AciklamaArayuzu, QMainWindow):
             arac_grup.addAction(e)
         self._arac_eylemleri = {"el": self.e_el, "sec": self.e_sec}
         self.e_gece = self._eylem("Gece Modu", self._gece_uygula, simge="gece", isaretli=False)
-        gorunum = mb.addMenu("&Görünüm")
+        gorunum = self.m_gorunum = mb.addMenu("&Görünüm")
         for e in (self.e_yakin, self.e_uzak, self.e_yuzde100, self.e_genislik, self.e_sayfaya):
             gorunum.addAction(e)
         gorunum.addSeparator()
@@ -280,6 +281,7 @@ class AnaPencere(AciklamaArayuzu, QMainWindow):
                                  self.e_sayfaya, self.e_sil, self.e_cikar, self.e_sol, self.e_sag, self.e_bos,
                                  self.e_ekle, self.e_bol]
         self._aciklama_kur()
+        self._duzenleme_kur()
 
     # --- belge açma/kapama ---
     def ac_sor(self):

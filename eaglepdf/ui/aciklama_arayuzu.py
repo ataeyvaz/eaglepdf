@@ -185,6 +185,7 @@ class AciklamaArayuzu:
             "baglanti": "Bağlantı olacak alanı sürükleyerek seçin.",
             "imza": "İmzanın yerini sürükleyin (ya da tıklayın).",
         }
+        ipuclari.update(getattr(self, "_ek_ipuclari", {}))
         if kimlik in ipuclari:
             self.statusBar().showMessage(ipuclari[kimlik], 6000)
 
@@ -251,6 +252,8 @@ class AciklamaArayuzu:
     # --- görüntüleyiciden gelen eylemler ---
     def _arac_eylemi(self, arac: str, sayfa: int, veri):
         if not self.belge:
+            return
+        if self._duzenleme_eylemi(arac, sayfa, veri):
             return
         b, renk, yazar = self.belge, self._renkler.get(arac, "#c62828"), self._yazar
         if arac in ISARET_ARACLARI:

@@ -12,15 +12,15 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım, hakkında, kırmızı tema | Görüntüleyici (sürekli kaydırma, tembel çizim, yakınlaştırma), küçük resim + yer imi paneli, arama çubuğu, sayfa işlemleri menüsü, birleştir/böl pencereleri, yardım, hakkında; 4 arayüz testi | ✅ |
 | Faz 1: görünüm ve araçlar | tek/çift/sürekli sayfa, el + metin seçme (kopyala), gece modu, yazdırma (+aralık/seçili), çizgi simgeler | tamamlandı; 20 test geçti | ✅ |
 | Faz 3 çekirdek (`core/duzenleme.py`) | kırp (+otomatik), sayfa boyutu, filigran (metin/resim), arka plan, üstbilgi/altbilgi, sayfa numarası, kalıcı silme (redaction), düzleştirme, mühür/resim (saydam, taşı/boyutlandır), metin bloğu düzenleme | 32 yeni test (4 sayfa döndürmesinde doğrulandı) | ✅ |
-| Faz 3 arayüz | araçlar, diyaloglar, menü | — | 🔄 |
+| Faz 3 arayüz | Düzenle menüsü + üçüncü araç çubuğu; metin düzenleme, resim/mühür yerleştirme (taşı, köşeden boyutlandır), özel mühür, kalıcı sil, ara-ve-sil, düzleştir; Sayfa menüsü: kırp, boyut, filigran, arka plan, üstbilgi/altbilgi, sayfa no (aralık + tek/çift süzgeci) | 90 test geçti; gerçek ekranda görüldü | ✅ |
 | Faz 2 çekirdek (`core/ekaciklama.py`, `gecmis.py`, `yazitipi.py`) | vurgu/altı/üstü/dalga, çizim, not, şekil, metin kutusu (Türkçe, Noto Sans), bul/sil/taşı/renk/metin, bağlantı, yer imi, form alanları, görsel imza yerleştirme, geri al/yinele | 11 yeni test geçti (toplam 31) | ✅ |
 | Faz 2 arayüz | ikinci araç çubuğu (14 araç), seç/taşı/renk/metin düzenle/sil, açıklama paneli (süz, toplu sil), form doldurma (sayfa üstü kutular), görsel imza (çiz/yaz/resim, kayıtlı imzalar), bağlantı ekle/sil/tıkla, düzenlenebilir yer imleri, geri al/yinele | 47 test geçti; gerçek ekranda görüldü | ✅ |
 | Faz 1: belge sekmeleri | çoklu belge | yapılmadı (bkz. Kararlar) | ⏸ |
 
-Testler: `.venv\Scripts\python -m pytest` (79 geçti)
+Testler: `.venv\Scripts\python -m pytest` (90 geçti)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
-1. **Faz 3'e başla:** düzenleme (metin düzenleme, resim ekle/taşı, mühür, redaction, düzleştirme, kırp, filigran, üstbilgi/altbilgi, sayfa numarası, arka plan, sayfa boyutu).
+1. **Faz 4'e başla:** dönüştürme ve sıkıştırma (PDF→resim, PDF→Word/Excel/PPT/metin/HTML, resim/Word/Excel→PDF, sıkıştır, karşılaştır, tarayıcıdan ekle, toplu işlemler).
 2. Toplu yazdırma, belge sekmeleri, belge özellikleri düzenleme, ayarlar penceresi (varsayılan görünüm, dosya ilişkilendirme) Faz 1 artıkları olarak uygun yerde eklenecek.
 3. Türkçe OCR verisi (`tur.traineddata`, Apache-2.0) Faz 5'te temin edilecek.
 4. (İsteğe bağlı) ⚠ işaretli noktaları PDFgear'ı elle açıp gözlemle.
@@ -48,6 +48,8 @@ Testler: `.venv\Scripts\python -m pytest` (79 geçti)
 - 2026-10-16: **Türkçe metin gömme:** PDF yerleşik yazı tipleri ş/ğ/ı/İ'yi desteklemez; metin kutusu/filigran vb. için Noto Sans (`pymupdf-fonts`, SIL OFL) gömülür ve metin kutusunun görünümü (AP) elle üretilir. Geri al/yinele: değişiklik öncesi belge baytları (30 adım / 300 MB sınırı).
 - 2026-10-16: Kayıtta gömülü yazı tipleri belgenin **kopyasında** alt kümelenir (506 KB → ~49 KB); çalışan belge tam yazı tipiyle kalır.
 - 2026-10-16: Görsel imza bir **resim**dir (sertifikasız); sertifikalı dijital imza Faz 5.
+- 2026-10-16: **Metin düzenleme sınırı:** orijinal yazı tipi korunamaz; paragraf silinip Noto Sans ile yeniden yazılır (döndürülmüş sayfa ve taranmış sayfada yok) — kullanıcıya yardımda açıkça yazıldı.
+- 2026-10-16: Resim ve mühür **Stamp ek açıklaması** olarak eklenir (taşınır/boyutlandırılır, Düzleştir ile sayfaya işlenir); saydam PNG için görünüm (AP) elle kurulur.
 - 2026-10-16: **Arayüz vurgu rengi KIRMIZI** (`#c62828`, `ui/theme.py`); yerleşim Eagle Office düzeniyle aynı (başlık şeridi, menü, araç çubuğu) — kullanıcı isteği. Sözcük/Tabcel'in mavisinden bilerek ayrılır.
 - 2026-10-16: Kayıt davranışı: Kaydet açık dosyanın üzerine yazar ama onay sorar; Farklı Kaydet varsayılan önerilir; her kayıt geçici dosya → yerine koy.
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
@@ -67,6 +69,10 @@ Testler: `.venv\Scripts\python -m pytest` (79 geçti)
 | Kardeş projeler | `Desktop\sozcuk`, `Desktop\tabcel` (arayüz ve yapı referansı) |
 
 ## 7. Bilinen sorunlar ve tuzaklar
+- PyMuPDF `add_stamp_annot` verilen dikdörtgeni varsayılan damganın en/boy oranına uydurur ve PNG saydamlığını yok sayar → `muhur_ekle` kutuyu geri yükler, görünümü kendi kurar.
+- Döndürülmüş sayfalarda metin/resim eklerken `rotate=sayfa_dönüşü` (ters değil) doğru yöndür; 4 dönüşte testli. Kırpmada kırpma kutusu başlangıcı eklenmeli.
+- Filigran/üstbilgi sayfa içeriğine yazılır; ayrı bir 'filigranı kaldır' yok (Geri Al kullanılır).
+- Düzleştirme tüm belgeyi etkiler (sayfa bazlı değil); sayfa boyutu değişirken yalnızca o sayfaların açıklamaları işlenir.
 - PyMuPDF: `add_freetext_annot` kenarlık rengini yalnızca zengin metinde kabul eder → kenarlık `EaglePDFKenar` anahtarıyla saklanıp kendi görünüm akışımızda çizilir; dolgu rengi `/C` içindedir (`colors['stroke']`).
 - PyMuPDF ek açıklama nesnesi sayfaya zayıf bağlıdır: sayfa nesnesi canlı tutulmazsa `ReferenceError` (bkz. `_annot`).
 - Form alanlarında Türkçe değer yazılınca PDF'in kendi alan görünümü (Helv) ş/ğ/ı için bozuk olabilir; `NeedAppearances` işaretlenir, uygulama içinde üstteki kutu doğru gösterir. Başka okuyucuda denenmedi.
