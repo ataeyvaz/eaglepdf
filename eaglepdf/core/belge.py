@@ -241,14 +241,27 @@ class Belge(EkAciklamaIslemleri):
         if self.yol and hedef.resolve() == self.yol.resolve():
             # Önce geçici dosyaya yaz; Windows'ta yer değiştirmek için açık belge kapatılır, sonra yeniden açılır
             try:
-                _gecici_yaz(lambda g: self._doc.save(g, garbage=3, deflate=True), hedef, self._doc.close)
+                _gecici_yaz(self._motoru_yaz, hedef, self._doc.close)
             finally:
                 if self._doc.is_closed:
                     self._doc = pymupdf.open(hedef)
         else:
-            _gecici_yaz(lambda g: self._doc.save(g, garbage=3, deflate=True), hedef)
+            _gecici_yaz(self._motoru_yaz, hedef)
             self.yol = hedef
         self.degisti = False
+
+    def _motoru_yaz(self, hedef: str):
+        """Belgeyi `hedef`e yazar. Gömülü yazı tipleri yalnızca belgenin bir kopyasında küçültülür (alt küme);
+        çalışan belge değişmez, böylece sonradan eklenen metinlerde eksik harf olmaz."""
+        kopya = pymupdf.open("pdf", self._doc.tobytes())
+        try:
+            try:
+                kopya.subset_fonts()
+            except Exception:
+                pass  # yazı tipi küçültülemezse tam yazı tipiyle kaydedilir
+            kopya.save(hedef, garbage=3, deflate=True)
+        finally:
+            kopya.close()
 
     def sayfalari_kaydet(self, sayfalar: list[int], hedef):
         """Seçili sayfaları ayrı bir PDF olarak yazar (çıkar)."""

@@ -12,13 +12,13 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım, hakkında, kırmızı tema | Görüntüleyici (sürekli kaydırma, tembel çizim, yakınlaştırma), küçük resim + yer imi paneli, arama çubuğu, sayfa işlemleri menüsü, birleştir/böl pencereleri, yardım, hakkında; 4 arayüz testi | ✅ |
 | Faz 1: görünüm ve araçlar | tek/çift/sürekli sayfa, el + metin seçme (kopyala), gece modu, yazdırma (+aralık/seçili), çizgi simgeler | tamamlandı; 20 test geçti | ✅ |
 | Faz 2 çekirdek (`core/ekaciklama.py`, `gecmis.py`, `yazitipi.py`) | vurgu/altı/üstü/dalga, çizim, not, şekil, metin kutusu (Türkçe, Noto Sans), bul/sil/taşı/renk/metin, bağlantı, yer imi, form alanları, görsel imza yerleştirme, geri al/yinele | 11 yeni test geçti (toplam 31) | ✅ |
-| Faz 2 arayüz | açıklama araç çubuğu, seç/taşı, açıklama paneli, form doldurma, imza, bağlantı/yer imi düzenleme, geri al/yinele | — | 🔄 |
+| Faz 2 arayüz | ikinci araç çubuğu (14 araç), seç/taşı/renk/metin düzenle/sil, açıklama paneli (süz, toplu sil), form doldurma (sayfa üstü kutular), görsel imza (çiz/yaz/resim, kayıtlı imzalar), bağlantı ekle/sil/tıkla, düzenlenebilir yer imleri, geri al/yinele | 47 test geçti; gerçek ekranda görüldü | ✅ |
 | Faz 1: belge sekmeleri | çoklu belge | yapılmadı (bkz. Kararlar) | ⏸ |
 
-Testler: `.venv\Scripts\python -m pytest` (31 geçti)
+Testler: `.venv\Scripts\python -m pytest` (47 geçti)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
-1. **Faz 2'ye başla:** ek açıklama + form (vurgula, altını çiz/üstünü çiz, serbest çizim, not, metin kutusu, şekil, form doldurma, görsel imza, bağlantı, yer imi ekle/düzenle, ek açıklama listesi).
+1. **Faz 3'e başla:** düzenleme (metin düzenleme, resim ekle/taşı, mühür, redaction, düzleştirme, kırp, filigran, üstbilgi/altbilgi, sayfa numarası, arka plan, sayfa boyutu).
 2. Toplu yazdırma, belge sekmeleri, belge özellikleri düzenleme, ayarlar penceresi (varsayılan görünüm, dosya ilişkilendirme) Faz 1 artıkları olarak uygun yerde eklenecek.
 3. Türkçe OCR verisi (`tur.traineddata`, Apache-2.0) Faz 5'te temin edilecek.
 4. (İsteğe bağlı) ⚠ işaretli noktaları PDFgear'ı elle açıp gözlemle.
@@ -44,6 +44,8 @@ Testler: `.venv\Scripts\python -m pytest` (31 geçti)
 - 2026-10-16: **Faz sırası onaylandı** (okuyucu/sayfa → ek açıklama/form → düzenleme → dönüştürme/sıkıştırma → OCR/koruma/imza) — kullanıcı. **Yerel çeviri ve sohbet (yapay zekâ) alınmayacak** (ücretsiz uygun model yok) — kullanıcı.
 - 2026-10-16: **Belge sekmeleri ertelendi:** görüntüleyici/panel yapısı tek belgeye göre; sekme için çoklu `Belge` + sekme başına görünüm durumu gerekir. Şimdilik her belge ayrı pencerede (EaglePDF.bat ile yeni örnek). İstenirse Faz 1 artığı olarak yapılır.
 - 2026-10-16: **Türkçe metin gömme:** PDF yerleşik yazı tipleri ş/ğ/ı/İ'yi desteklemez; metin kutusu/filigran vb. için Noto Sans (`pymupdf-fonts`, SIL OFL) gömülür ve metin kutusunun görünümü (AP) elle üretilir. Geri al/yinele: değişiklik öncesi belge baytları (30 adım / 300 MB sınırı).
+- 2026-10-16: Kayıtta gömülü yazı tipleri belgenin **kopyasında** alt kümelenir (506 KB → ~49 KB); çalışan belge tam yazı tipiyle kalır.
+- 2026-10-16: Görsel imza bir **resim**dir (sertifikasız); sertifikalı dijital imza Faz 5.
 - 2026-10-16: **Arayüz vurgu rengi KIRMIZI** (`#c62828`, `ui/theme.py`); yerleşim Eagle Office düzeniyle aynı (başlık şeridi, menü, araç çubuğu) — kullanıcı isteği. Sözcük/Tabcel'in mavisinden bilerek ayrılır.
 - 2026-10-16: Kayıt davranışı: Kaydet açık dosyanın üzerine yazar ama onay sorar; Farklı Kaydet varsayılan önerilir; her kayıt geçici dosya → yerine koy.
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
@@ -63,6 +65,10 @@ Testler: `.venv\Scripts\python -m pytest` (31 geçti)
 | Kardeş projeler | `Desktop\sozcuk`, `Desktop\tabcel` (arayüz ve yapı referansı) |
 
 ## 7. Bilinen sorunlar ve tuzaklar
+- PyMuPDF: `add_freetext_annot` kenarlık rengini yalnızca zengin metinde kabul eder → kenarlık `EaglePDFKenar` anahtarıyla saklanıp kendi görünüm akışımızda çizilir; dolgu rengi `/C` içindedir (`colors['stroke']`).
+- PyMuPDF ek açıklama nesnesi sayfaya zayıf bağlıdır: sayfa nesnesi canlı tutulmazsa `ReferenceError` (bkz. `_annot`).
+- Form alanlarında Türkçe değer yazılınca PDF'in kendi alan görünümü (Helv) ş/ğ/ı için bozuk olabilir; `NeedAppearances` işaretlenir, uygulama içinde üstteki kutu doğru gösterir. Başka okuyucuda denenmedi.
+- Ek açıklama taşıma: çizim, çizgi/ok ve işaretler (vurgu vb.) taşınamaz, silip yeniden eklenir.
 - `QSpinBox` + stil sayfası Fusion'da boş kalıyor (metin alanı 1 px); sayfa kutusu bu yüzden `QLineEdit` tabanlı (`SayfaKutusu`).
 - Bu ortamda uzun `python - <<heredoc` bazen kabukta ayrışmıyor; betikleri dosyaya yazıp çalıştır.
 - Metin seçme kelime tabanlı (PyMuPDF kelime kutuları); sütunlu sayfalarda içerik sırasına göre seçer, görsel sıraya göre değil.

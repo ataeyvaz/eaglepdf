@@ -14,6 +14,7 @@ from .. import APP_NAME, PAKET_ADI
 from ..core import belge as belge_modulu
 from ..core.belge import Belge, BelgeHatasi, ParolaGerekli
 from . import simgeler, theme
+from .aciklama_arayuzu import AciklamaArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
 from .hakkinda import HakkindaPenceresi
 from .paneller import KucukResimler, YerImleri
@@ -53,7 +54,7 @@ class SayfaKutusu(QLineEdit):
         self.valueChanged.emit(v)
 
 
-class AnaPencere(QMainWindow):
+class AnaPencere(AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
         self.belge: Belge | None = None
@@ -112,7 +113,7 @@ class AnaPencere(QMainWindow):
         dikey.addWidget(self.bul_cubugu)
 
         self.kucuk = KucukResimler()
-        self.yer_imleri = YerImleri()
+        self.yer_imleri = YerImleri(lambda: self.goruntuleyici.gecerli_sayfa)
         self.paneller = QTabWidget()
         self.paneller.addTab(self.kucuk, "Küçük Resimler")
         self.paneller.addTab(self.yer_imleri, "Yer İmleri")
@@ -180,7 +181,7 @@ class AnaPencere(QMainWindow):
         self.e_sonraki = self._eylem("Sonraki Sonuç", lambda: self._sonuca_git(1), "F3")
         self.e_onceki = self._eylem("Önceki Sonuç", lambda: self._sonuca_git(-1), "Shift+F3")
         self.e_kopyala = self._eylem("Seçili Metni Kopyala", self.kopyala, "Ctrl+C", simge="kopyala")
-        duzen = mb.addMenu("&Düzen")
+        duzen = self.m_duzen = mb.addMenu("&Düzen")
         duzen.addAction(self.e_kopyala)
         duzen.addSeparator()
         for e in (self.e_ara, self.e_sonraki, self.e_onceki):
@@ -203,9 +204,10 @@ class AnaPencere(QMainWindow):
             mod_grup.addAction(e)
         self.e_el = self._eylem("El Aracı", self._arac_uygula, simge="el", isaretli=True)
         self.e_sec = self._eylem("Metin Seçme Aracı", self._arac_uygula, simge="imlec", isaretli=False)
-        arac_grup = QActionGroup(self)
+        arac_grup = self._arac_grubu = QActionGroup(self)
         for e in (self.e_el, self.e_sec):
             arac_grup.addAction(e)
+        self._arac_eylemleri = {"el": self.e_el, "sec": self.e_sec}
         self.e_gece = self._eylem("Gece Modu", self._gece_uygula, simge="gece", isaretli=False)
         gorunum = mb.addMenu("&Görünüm")
         for e in (self.e_yakin, self.e_uzak, self.e_yuzde100, self.e_genislik, self.e_sayfaya):
@@ -230,7 +232,7 @@ class AnaPencere(QMainWindow):
         self.e_ekle = self._eylem("PDF Ekle (Sona)…", self.pdf_ekle)
         self.e_birlestir = self._eylem("Birleştir…", self.birlestir, simge="birlestir")
         self.e_bol = self._eylem("Böl…", self.bol, simge="bol")
-        sayfa = mb.addMenu("&Sayfa")
+        sayfa = self.m_sayfa = mb.addMenu("&Sayfa")
         for e in (self.e_sil, self.e_cikar):
             sayfa.addAction(e)
         sayfa.addSeparator()
@@ -277,6 +279,7 @@ class AnaPencere(QMainWindow):
                                  self.e_onceki, self.e_yakin, self.e_uzak, self.e_yuzde100, self.e_genislik,
                                  self.e_sayfaya, self.e_sil, self.e_cikar, self.e_sol, self.e_sag, self.e_bos,
                                  self.e_ekle, self.e_bol]
+        self._aciklama_kur()
 
     # --- belge açma/kapama ---
     def ac_sor(self):
@@ -313,6 +316,7 @@ class AnaPencere(QMainWindow):
             self.goruntuleyici.belge_ata(None)
             self.kucuk.belge_ata(None)
             self.yer_imleri.belge_ata(None)
+            self.aciklama_paneli.doldur([])
             self.belge.kapat()
             self.belge = None
         self._sonuclar, self._sonuc_no = [], -1
@@ -327,6 +331,7 @@ class AnaPencere(QMainWindow):
         self.goruntuleyici.belge_ata(self.belge, sayfa)
         self.kucuk.belge_ata(self.belge)
         self.yer_imleri.belge_ata(self.belge)
+        self.aciklamalari_tazele()
         self.kucuk.vurgula(min(sayfa, self.belge.sayfa_sayisi - 1))
         self._sonuclar, self._sonuc_no = [], -1
         self._durumu_guncelle()
@@ -337,6 +342,7 @@ class AnaPencere(QMainWindow):
             e.setEnabled(var)
         for w in (self.sayfa_kutu, self.paneller):
             w.setEnabled(var)
+        self._aciklama_durumu()
         if not var:
             self.belge_adi.setText(APP_NAME)
             self.belge_durum.setText("")
@@ -467,6 +473,8 @@ class AnaPencere(QMainWindow):
 
     def sayfalari_sil(self):
         if not self.belge:
+            return
+        if self.ek_sil_secili():  # seçili bir ek açıklama varsa Del onu siler
             return
         sayfalar = self._hedef_sayfalar()
         if QMessageBox.question(
@@ -603,9 +611,16 @@ class AnaPencere(QMainWindow):
         self.ayarlar.setValue("gorunum_sutun", sutun)
 
     def _arac_uygula(self, *_):
-        arac = ARAC_SEC if self.e_sec.isChecked() else ARAC_EL
+        arac = ARAC_EL
+        for kimlik, e in self._arac_eylemleri.items():
+            if e.isChecked():
+                arac = kimlik
+                break
         self.goruntuleyici.arac_ata(arac)
-        self.ayarlar.setValue("arac", arac)
+        if arac in (ARAC_EL, ARAC_SEC):
+            self.ayarlar.setValue("arac", arac)
+        if hasattr(self, "renk_dugme"):
+            self._arac_degisti(arac)
 
     def _gece_uygula(self, *_):
         self.goruntuleyici.gece_ata(self.e_gece.isChecked())

@@ -1,20 +1,27 @@
-"""PDF görüntüleyici: sürekli/tek sayfa, tek/çift sütun, el ve metin seçme aracı, gece modu.
+"""PDF görüntüleyici: sürekli/tek sayfa, tek/çift sütun, gece modu ve fare araçları.
 
-Yalnızca görünen sayfalar çizilir (tembel yükleme); kelime konumları sayfa ilk seçildiğinde çıkarılır.
+Araçlar: el, metin seçme, metin işaretleme (vurgu/altı/üstü/dalga), çizim, şekil, not, metin kutusu, bağlantı,
+imza yerleştirme ve ek açıklama seç/taşı. Görüntüleyici belgeyi değiştirmez; bir iş bittiğinde `aracEylemi`
+sinyaliyle (araç, sayfa, veri) ana pencereye bildirir. Yalnızca görünen sayfalar çizilir (tembel yükleme).
 """
 
 from PySide6.QtCore import QPoint, QPointF, QRectF, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
-from PySide6.QtWidgets import QApplication, QLabel, QScrollArea, QWidget
+from PySide6.QtGui import QColor, QImage, QPainter, QPen, QPixmap
+from PySide6.QtWidgets import QApplication, QCheckBox, QComboBox, QLabel, QLineEdit, QScrollArea, QWidget
 
 from ..core.belge import Belge
+from ..core.ekaciklama import TASINABILIR, kelimelerden_satirlar
 from . import theme
 
 BOSLUK = 12  # sayfalar arası (px)
 ONBELLEK_KOMSU = 1  # görünen satırın üstünde/altında tutulan satır sayısı
 EN_AZ_OLCEK, EN_COK_OLCEK = 0.1, 6.0
-ARAC_EL, ARAC_SEC = "el", "sec"
+ARAC_EL, ARAC_SEC, ARAC_DUZENLE = "el", "sec", "duzenle"
+ISARET_ARACLARI = ("vurgu", "alti", "ustu", "dalga")
+SEKIL_ARACLARI = ("cizgi", "ok", "dikdortgen", "elips")
+SURUKLE_ARACLARI = SEKIL_ARACLARI + ("metin", "baglanti", "imza")
 MOD_SUREKLI, MOD_TEK = "sureklu", "tek"
+TIKLAMA_ESIGI = 4  # px: bundan az hareket tıklamadır
 
 
 def pixmap_den(px, dpr: float, gece: bool = False) -> QPixmap:
@@ -33,14 +40,19 @@ class SayfaEtiketi(QLabel):
         self.indeks = indeks
         self.gor = gor
         self.pix: QPixmap | None = None
-        self.vurgular: list[tuple[float, float, float, float]] = []  # sayfa noktası (pt)
+        self.vurgular: list[tuple[float, float, float, float]] = []  # arama sonucu, sayfa noktası (pt)
         self.aktif_vurgu = -1
-        self.secim: list[tuple[float, float, float, float]] = []
+        self.secim: list[tuple[float, float, float, float]] = []  # metin seçimi
+        self.onizleme: tuple | None = None  # sürüklenen çizim/şekil önizlemesi
+        self.secili_ek: tuple[float, float, float, float] | None = None
+        self.tasima = (0.0, 0.0)
+        self.form_widgetlari: list[QWidget] = []
         self.olcek = 1.0
         self.gece = False
 
     def paintEvent(self, _):
         p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
         p.fillRect(self.rect(), QColor("#1e1e1e" if self.gece else "#ffffff"))
         if self.pix is not None:
             p.drawPixmap(0, 0, self.pix)
@@ -53,8 +65,41 @@ class SayfaEtiketi(QLabel):
         sec.setAlpha(80)
         for x0, y0, x1, y1 in self.secim:
             p.fillRect(QRectF(x0 * o, y0 * o, (x1 - x0) * o, (y1 - y0) * o), sec)
+        if self.secili_ek:
+            x0, y0, x1, y1 = self.secili_ek
+            dx, dy = self.tasima
+            kalem = QPen(QColor(theme.ACCENT), 1.5, Qt.DashLine)
+            p.setPen(kalem)
+            p.setBrush(Qt.NoBrush)
+            p.drawRect(QRectF((x0 + dx) * o - 3, (y0 + dy) * o - 3, (x1 - x0) * o + 6, (y1 - y0) * o + 6))
+        if self.onizleme:
+            self._onizleme_ciz(p)
         p.setPen(QColor(theme.BORDER))
+        p.setBrush(Qt.NoBrush)
         p.drawRect(self.rect().adjusted(0, 0, -1, -1))
+
+    def _onizleme_ciz(self, p: QPainter):
+        tur, veri, renk, kalinlik = self.onizleme
+        o = self.olcek
+        kalem = QPen(QColor(renk), max(kalinlik * o, 1), Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        p.setPen(kalem)
+        p.setBrush(Qt.NoBrush)
+        if tur == "poli":
+            for a, b in zip(veri, veri[1:]):
+                p.drawLine(QPointF(a[0] * o, a[1] * o), QPointF(b[0] * o, b[1] * o))
+            return
+        (x0, y0), (x1, y1) = veri
+        if tur in ("cizgi", "ok"):
+            p.drawLine(QPointF(x0 * o, y0 * o), QPointF(x1 * o, y1 * o))
+            return
+        r = QRectF(QPointF(x0 * o, y0 * o), QPointF(x1 * o, y1 * o)).normalized()
+        if tur == "elips":
+            p.drawEllipse(r)
+        elif tur == "dikdortgen":
+            p.drawRect(r)
+        else:  # metin / bağlantı / imza: kesikli kutu
+            p.setPen(QPen(QColor(theme.ACCENT), 1.5, Qt.DashLine))
+            p.drawRect(r)
 
     def mousePressEvent(self, olay):
         self.gor._fare_bas(self, olay)
@@ -65,11 +110,22 @@ class SayfaEtiketi(QLabel):
     def mouseReleaseEvent(self, olay):
         self.gor._fare_birak(self, olay)
 
+    def mouseDoubleClickEvent(self, olay):
+        self.gor._cift_tik(self, olay)
+
+    def contextMenuEvent(self, olay):
+        self.gor._sag_tik(self, olay)
+
 
 class Goruntuleyici(QScrollArea):
     sayfaDegisti = Signal(int)  # 0 tabanlı geçerli sayfa
     olcekDegisti = Signal(float)
     secimDegisti = Signal(bool)  # seçili metin var mı
+    aracEylemi = Signal(str, int, object)  # araç, sayfa, veri (kalan eylemleri ana pencere uygular)
+    ekSecildi = Signal(object)  # EkAciklama ya da None
+    baglantiTiklandi = Signal(dict)
+    sagTiklandi = Signal(str, int, object, object)  # tür ("ek"|"baglanti"|"sayfa"), sayfa, veri, genel konum
+    formDegisti = Signal(int, int, object)  # sayfa, alan xref, yeni değer
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -82,11 +138,21 @@ class Goruntuleyici(QScrollArea):
         self._sutun = 1
         self._gece = False
         self._arac = ARAC_EL
+        self.renk = "#c62828"        # etkin aracın rengi (önizleme için)
+        self.kalinlik = 2.0
+        self.form_acik = True
         self._vurgu_sayfalari: dict[int, list] = {}
         self._kelimeler: dict[int, list] = {}
+        self._baglanti_onbellek: dict[int, list] = {}
+        self._form_onbellek: dict[int, list] = {}
         self._secim_bas: tuple[int, int] | None = None  # (sayfa, kelime)
         self._secim_son: tuple[int, int] | None = None
         self._surukle_son: QPoint | None = None
+        self._bas_global: QPoint | None = None
+        self._bas_nokta: tuple[float, float] | None = None
+        self._cizim: list[tuple[float, float]] = []
+        self._secili_ek = None
+        self._tasinan = None
         self.setWidgetResizable(False)
         self.setAlignment(Qt.AlignHCenter)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -115,6 +181,10 @@ class Goruntuleyici(QScrollArea):
     def arac(self) -> str:
         return self._arac
 
+    @property
+    def secili_ek(self):
+        return self._secili_ek
+
     def mod_ata(self, mod: str, sutun: int):
         if (mod, sutun) == (self._mod, self._sutun):
             return
@@ -134,23 +204,45 @@ class Goruntuleyici(QScrollArea):
         self._zamanlayici.start()
 
     def _gece_boya(self):
-        self._icerik.setStyleSheet(f"background: {'#2b2b2b' if self._gece else theme.CANVAS};")
-        self.viewport().setStyleSheet(f"background: {'#2b2b2b' if self._gece else theme.CANVAS};")
+        renk = "#2b2b2b" if self._gece else theme.CANVAS
+        self._icerik.setStyleSheet(f"background: {renk};")
+        self.viewport().setStyleSheet(f"background: {renk};")
 
     def arac_ata(self, arac: str):
         self._arac = arac
+        if arac != ARAC_DUZENLE:
+            self.ek_secimini_kaldir()
+        if arac not in (ARAC_SEC,) + ISARET_ARACLARI:
+            self.secimi_temizle()
         self._imlec_guncelle()
 
     def _imlec_guncelle(self):
-        self.viewport().setCursor(Qt.OpenHandCursor if self._arac == ARAC_EL else Qt.IBeamCursor)
+        if self._arac == ARAC_EL:
+            imlec = Qt.OpenHandCursor
+        elif self._arac in (ARAC_SEC,) + ISARET_ARACLARI:
+            imlec = Qt.IBeamCursor
+        elif self._arac == ARAC_DUZENLE:
+            imlec = Qt.ArrowCursor
+        else:
+            imlec = Qt.CrossCursor
+        self.viewport().setCursor(imlec)
         for e in self._etiketler:
-            e.setCursor(Qt.OpenHandCursor if self._arac == ARAC_EL else Qt.IBeamCursor)
+            e.setCursor(imlec)
+
+    def form_acik_ata(self, acik: bool):
+        self.form_acik = acik
+        for e in self._etiketler:
+            self._form_temizle(e)
+        self._zamanlayici.start()
 
     # --- belge ---
     def belge_ata(self, belge: Belge | None, sayfaya_git: int = 0):
         self.belge = belge
         self._kelimeler.clear()
+        self._baglanti_onbellek.clear()
+        self._form_onbellek.clear()
         self.secimi_temizle()
+        self.ek_secimini_kaldir()
         self.yerlestir(sayfaya_git)
 
     @property
@@ -196,8 +288,9 @@ class Goruntuleyici(QScrollArea):
             e.gece = self._gece
             e.resize(round(g * self._olcek), round(h * self._olcek))
             e.vurgular = list(self._vurgu_sayfalari.get(i, []))
-            e.setCursor(Qt.OpenHandCursor if self._arac == ARAC_EL else Qt.IBeamCursor)
+            self._etiket_ek_durumu(e)
             self._etiketler.append(e)
+        self._imlec_guncelle()
         self._satirlar = [list(range(i, min(i + self._sutun, n))) for i in range(0, n, self._sutun)]
         self._gecerli = max(0, min(sayfaya_git, n - 1))
         self._diz()
@@ -205,6 +298,10 @@ class Goruntuleyici(QScrollArea):
         if self._secim_bas is not None:
             self._secimi_boya()
         self._zamanlayici.start()
+
+    def _etiket_ek_durumu(self, e: SayfaEtiketi):
+        if self._secili_ek and self._secili_ek.sayfa == e.indeks:
+            e.secili_ek = self._secili_ek.rect
 
     def _satir_no(self, sayfa: int) -> int:
         return sayfa // self._sutun
@@ -226,13 +323,13 @@ class Goruntuleyici(QScrollArea):
                 e.setVisible(gorunur)
                 if not gorunur:
                     e.pix = None
+                    self._form_temizle(e)
                 x += e.width() + BOSLUK
             if gorunur:
                 y += yuk + BOSLUK
         self._icerik.resize(toplam_gen, max(y, 1))
 
     def _satira_kaydir(self, sayfa: int):
-        e = self._etiketler[sayfa]
         satir_ust = min(self._etiketler[i].y() for i in self._satirlar[self._satir_no(sayfa)])
         self.verticalScrollBar().setValue(max(satir_ust - BOSLUK, 0))
 
@@ -262,8 +359,10 @@ class Goruntuleyici(QScrollArea):
                 if e.pix is None:
                     e.pix = pixmap_den(self.belge.render(e.indeks, self._olcek * dpr), dpr, self._gece)
                     e.update()
+                    self._form_kur(e)
             elif e.pix is not None:
                 e.pix = None
+                self._form_temizle(e)
         if self._mod == MOD_SUREKLI:
             ust = self.verticalScrollBar().value() + self.viewport().height() // 3
             yeni = self._gecerli
@@ -275,8 +374,13 @@ class Goruntuleyici(QScrollArea):
                 self.sayfaDegisti.emit(yeni)
 
     def yenile_sayfa(self, indeks: int):
+        """Sayfanın görüntüsünü ve ek durumlarını yeniden üretir (belge içeriği değişti)."""
+        for sozluk in (self._kelimeler, self._baglanti_onbellek, self._form_onbellek):
+            sozluk.pop(indeks, None)
         if 0 <= indeks < len(self._etiketler):
-            self._etiketler[indeks].pix = None
+            e = self._etiketler[indeks]
+            e.pix = None
+            self._form_temizle(e)
         self._zamanlayici.start()
 
     # --- gezinme ---
@@ -343,9 +447,15 @@ class Goruntuleyici(QScrollArea):
             sayfa, rect = sonuclar[aktif]
             self.git(sayfa, rect[1])
 
-    # --- fare: el aracı ve metin seçme ---
+    # --- koordinat yardımcıları ---
     def _icerik_noktasi(self, etiket: SayfaEtiketi, olay) -> QPoint:
         return etiket.mapTo(self._icerik, olay.position().toPoint())
+
+    def _sayfa_noktasi(self, etiket: SayfaEtiketi, olay) -> tuple[float, float]:
+        """Etiket içindeki fare konumu → sayfa noktası (pt); sayfa dışına taşarsa kenara kırpılır."""
+        g, y = self.belge.sayfa_boyutu(etiket.indeks)
+        konum = olay.position()
+        return (max(0.0, min(g, konum.x() / self._olcek)), max(0.0, min(y, konum.y() / self._olcek)))
 
     def _nokta_sayfasi(self, p: QPoint) -> tuple[int, QPointF] | None:
         """İçerik koordinatındaki noktanın hangi sayfada (ve sayfa noktası cinsinden nerede) olduğu."""
@@ -381,45 +491,167 @@ class Goruntuleyici(QScrollArea):
                 en_iyi, en_uzak = n, d
         return en_iyi
 
+    def _baglanti_bul(self, sayfa: int, nokta: tuple[float, float]) -> dict | None:
+        if sayfa not in self._baglanti_onbellek:
+            self._baglanti_onbellek[sayfa] = self.belge.baglantilar(sayfa)
+        for b in self._baglanti_onbellek[sayfa]:
+            x0, y0, x1, y1 = b["rect"]
+            if x0 <= nokta[0] <= x1 and y0 <= nokta[1] <= y1:
+                return b
+        return None
+
+    # --- fare ---
     def _fare_bas(self, etiket, olay):
-        if olay.button() != Qt.LeftButton:
+        if olay.button() != Qt.LeftButton or not self.belge:
             return
-        if self._arac == ARAC_EL:
-            self._surukle_son = olay.globalPosition().toPoint()
+        arac = self._arac
+        self._bas_global = olay.globalPosition().toPoint()
+        self._bas_nokta = self._sayfa_noktasi(etiket, olay)
+        if arac == ARAC_EL:
+            self._surukle_son = self._bas_global
             self.viewport().setCursor(Qt.ClosedHandCursor)
             etiket.setCursor(Qt.ClosedHandCursor)
-            return
-        self.setFocus()
-        konum = self._nokta_sayfasi(self._icerik_noktasi(etiket, olay))
-        self.secimi_temizle()
-        if konum:
-            k = self._kelime_bul(konum[0], konum[1])
-            if k >= 0:
-                self._secim_bas = self._secim_son = (konum[0], k)
+        elif arac == ARAC_SEC or arac in ISARET_ARACLARI:
+            self.setFocus()
+            konum = self._nokta_sayfasi(self._icerik_noktasi(etiket, olay))
+            self.secimi_temizle()
+            if konum:
+                k = self._kelime_bul(konum[0], konum[1])
+                if k >= 0:
+                    self._secim_bas = self._secim_son = (konum[0], k)
+        elif arac == "ciz":
+            self._cizim = [self._bas_nokta]
+            etiket.onizleme = ("poli", self._cizim, self.renk, self.kalinlik)
+        elif arac in SURUKLE_ARACLARI:
+            etiket.onizleme = (arac, (self._bas_nokta, self._bas_nokta), self.renk, self.kalinlik)
+        elif arac == ARAC_DUZENLE:
+            self.setFocus()
+            ek = self.belge.ek_bul(etiket.indeks, self._bas_nokta)
+            self._ek_sec(ek)
+            self._tasinan = ek if ek and ek.tur in TASINABILIR else None
+        etiket.update()
 
     def _fare_hareket(self, etiket, olay):
-        if self._arac == ARAC_EL and self._surukle_son is not None:
+        arac = self._arac
+        if arac == ARAC_EL and self._surukle_son is not None:
             simdi = olay.globalPosition().toPoint()
             fark = simdi - self._surukle_son
             self._surukle_son = simdi
             self.horizontalScrollBar().setValue(self.horizontalScrollBar().value() - fark.x())
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() - fark.y())
             return
-        if self._arac == ARAC_SEC and self._secim_bas is not None:
+        if (arac == ARAC_SEC or arac in ISARET_ARACLARI) and self._secim_bas is not None:
             konum = self._nokta_sayfasi(self._icerik_noktasi(etiket, olay))
             if konum:
                 k = self._kelime_bul(konum[0], konum[1])
                 if k >= 0 and (konum[0], k) != self._secim_son:
                     self._secim_son = (konum[0], k)
                     self._secimi_boya()
+            return
+        if self._bas_nokta is None:
+            return
+        nokta = self._sayfa_noktasi(etiket, olay)
+        if arac == "ciz" and self._cizim:
+            if (nokta[0] - self._cizim[-1][0]) ** 2 + (nokta[1] - self._cizim[-1][1]) ** 2 > 0.5:
+                self._cizim.append(nokta)
+                etiket.update()
+        elif arac in SURUKLE_ARACLARI and etiket.onizleme:
+            etiket.onizleme = (arac, (self._bas_nokta, nokta), self.renk, self.kalinlik)
+            etiket.update()
+        elif arac == ARAC_DUZENLE and self._tasinan is not None:
+            etiket.tasima = (nokta[0] - self._bas_nokta[0], nokta[1] - self._bas_nokta[1])
+            etiket.update()
 
     def _fare_birak(self, etiket, olay):
-        if self._arac == ARAC_EL:
+        arac = self._arac
+        bas_global, self._bas_global = self._bas_global, None
+        hareket = (olay.globalPosition().toPoint() - bas_global).manhattanLength() if bas_global else 0
+        tiklama = hareket < TIKLAMA_ESIGI
+        bas_nokta, self._bas_nokta = self._bas_nokta, None
+        if not self.belge or bas_nokta is None:
+            return
+        nokta = self._sayfa_noktasi(etiket, olay)
+        sayfa = etiket.indeks
+        if arac == ARAC_EL:
             self._surukle_son = None
             self._imlec_guncelle()
-        else:
+        if arac in (ARAC_EL, ARAC_SEC) and tiklama:
+            baglanti = self._baglanti_bul(sayfa, bas_nokta)
+            if baglanti:
+                self.baglantiTiklandi.emit(baglanti)
+                return
+        if arac == ARAC_SEC:
             self.secimDegisti.emit(bool(self.secili_metin()))
+        elif arac in ISARET_ARACLARI:
+            veri = self._secili_satirlar()
+            self.secimi_temizle()
+            if veri:
+                self.aracEylemi.emit(arac, -1, veri)
+        elif arac == "ciz":
+            etiket.onizleme = None
+            cizgi, self._cizim = self._cizim, []
+            etiket.update()
+            if len(cizgi) >= 2:
+                self.aracEylemi.emit("ciz", sayfa, [cizgi])
+        elif arac == "not":
+            self.aracEylemi.emit("not", sayfa, bas_nokta)
+        elif arac in SURUKLE_ARACLARI:
+            etiket.onizleme = None
+            etiket.update()
+            if tiklama and arac in ("metin", "imza"):
+                self.aracEylemi.emit(arac, sayfa, (bas_nokta, None))
+            elif not tiklama:
+                self.aracEylemi.emit(arac, sayfa, (bas_nokta, nokta))
+        elif arac == ARAC_DUZENLE and self._tasinan is not None:
+            dx, dy = etiket.tasima
+            etiket.tasima = (0.0, 0.0)
+            tasinan, self._tasinan = self._tasinan, None
+            if not tiklama:
+                self.aracEylemi.emit("tasi", sayfa, (tasinan.xref, dx, dy))
+            etiket.update()
 
+    def _cift_tik(self, etiket, olay):
+        if self._arac == ARAC_DUZENLE and self.belge:
+            ek = self.belge.ek_bul(etiket.indeks, self._sayfa_noktasi(etiket, olay))
+            if ek:
+                self._ek_sec(ek)
+                self.aracEylemi.emit("ek_duzenle", etiket.indeks, ek)
+
+    def _sag_tik(self, etiket, olay):
+        if not self.belge:
+            return
+        nokta = self._sayfa_noktasi(etiket, olay)
+        genel = olay.globalPos()
+        if self._arac == ARAC_DUZENLE:
+            ek = self.belge.ek_bul(etiket.indeks, nokta)
+            if ek:
+                self._ek_sec(ek)
+                self.sagTiklandi.emit("ek", etiket.indeks, ek, genel)
+                return
+        baglanti = self._baglanti_bul(etiket.indeks, nokta)
+        if baglanti and self._arac == ARAC_DUZENLE:
+            self.sagTiklandi.emit("baglanti", etiket.indeks, baglanti, genel)
+        else:
+            self.sagTiklandi.emit("sayfa", etiket.indeks, nokta, genel)
+
+    # --- ek açıklama seçimi ---
+    def _ek_sec(self, ek):
+        self.ek_secimini_ayarla(ek)
+        self.ekSecildi.emit(ek)
+
+    def ek_secimini_ayarla(self, ek):
+        self._secili_ek = ek
+        for e in self._etiketler:
+            e.secili_ek = ek.rect if ek and ek.sayfa == e.indeks else None
+            e.tasima = (0.0, 0.0)
+            e.update()
+
+    def ek_secimini_kaldir(self):
+        if self._secili_ek is not None:
+            self.ek_secimini_ayarla(None)
+            self.ekSecildi.emit(None)
+
+    # --- metin seçme ---
     def _secili_kelimeler(self) -> list[tuple[int, int]]:
         if self._secim_bas is None or self._secim_son is None:
             return []
@@ -431,6 +663,13 @@ class Goruntuleyici(QScrollArea):
             bit = son[1] if sayfa == son[0] else adet - 1
             sonuc += [(sayfa, k) for k in range(ilk, bit + 1)]
         return sonuc
+
+    def _secili_satirlar(self) -> dict[int, list]:
+        """{sayfa: [satır dikdörtgenleri]} — işaretleme araçları için."""
+        per_sayfa: dict[int, list] = {}
+        for sayfa, k in self._secili_kelimeler():
+            per_sayfa.setdefault(sayfa, []).append(self._kelime_listesi(sayfa)[k])
+        return {s: kelimelerden_satirlar(k) for s, k in per_sayfa.items()}
 
     def _secimi_boya(self):
         per_sayfa: dict[int, list] = {}
@@ -466,6 +705,55 @@ class Goruntuleyici(QScrollArea):
         if metin:
             QApplication.clipboard().setText(metin)
         return bool(metin)
+
+    # --- form alanları (sayfa üstüne doldurulabilir kutular) ---
+    def _form_temizle(self, etiket: SayfaEtiketi):
+        for w in etiket.form_widgetlari:
+            w.deleteLater()
+        etiket.form_widgetlari = []
+
+    def _form_kur(self, etiket: SayfaEtiketi):
+        self._form_temizle(etiket)
+        if not self.form_acik or not self.belge or not self.belge.form_var_mi():
+            return
+        if etiket.indeks not in self._form_onbellek:
+            self._form_onbellek[etiket.indeks] = self.belge.form_alanlari([etiket.indeks])
+        o = self._olcek
+        for alan in self._form_onbellek[etiket.indeks]:
+            if alan.salt_okunur or alan.tur not in ("metin", "onay", "secenek", "acilir", "liste"):
+                continue
+            x0, y0, x1, y1 = alan.rect
+            w = self._form_widget(alan, etiket)
+            w.setGeometry(round(x0 * o), round(y0 * o), max(round((x1 - x0) * o), 8), max(round((y1 - y0) * o), 8))
+            w.show()
+            etiket.form_widgetlari.append(w)
+
+    def _form_widget(self, alan, etiket: SayfaEtiketi) -> QWidget:
+        sayfa, xref = etiket.indeks, alan.xref
+        zemin = "background: rgba(255, 244, 150, 0.85); border: 1px solid #e0a800;"
+        if alan.tur == "metin":
+            w = QLineEdit(str(alan.deger or ""), etiket)
+            w.setStyleSheet(f"QLineEdit {{ {zemin} padding: 0 2px; }}")
+            son = [str(alan.deger or "")]
+
+            def bitti():
+                if w.text() != son[0]:
+                    son[0] = w.text()
+                    self.formDegisti.emit(sayfa, xref, w.text())
+            w.editingFinished.connect(bitti)
+        elif alan.tur in ("onay", "secenek"):
+            w = QCheckBox(etiket)
+            w.setChecked(bool(alan.deger))
+            w.setStyleSheet(f"QCheckBox {{ {zemin} }}")
+            w.clicked.connect(lambda isaretli: self.formDegisti.emit(sayfa, xref, isaretli))
+        else:
+            w = QComboBox(etiket)
+            w.addItems(alan.secenekler)
+            if str(alan.deger) in alan.secenekler:
+                w.setCurrentText(str(alan.deger))
+            w.setStyleSheet(f"QComboBox {{ {zemin} padding: 0 2px; }}")
+            w.textActivated.connect(lambda metin: self.formDegisti.emit(sayfa, xref, metin))
+        return w
 
     def sizeHint(self):
         return QSize(800, 600)

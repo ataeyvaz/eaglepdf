@@ -12,7 +12,7 @@ python -m venv .venv
 ```
 
 ## Durum
-Faz 1 (okuyucu ve sayfa işlemleri) sürüyor. Ayrıntı: `surec.md`, özellik haritası: `docs/ozellikler.md`.
+Faz 1 (okuyucu ve sayfa işlemleri) tamam; Faz 2 (ek açıklama, form, imza) büyük ölçüde tamam. Ayrıntı: `surec.md`, özellik haritası: `docs/ozellikler.md`.
 
 ## Lisans
 Proje **GNU AGPL-3.0** (`LICENSE`), açık kaynak ve ticari amaçsız.
@@ -21,4 +21,5 @@ Proje **GNU AGPL-3.0** (`LICENSE`), açık kaynak ve ticari amaçsız.
 |---|---|---|
 | PyMuPDF (MuPDF) | PDF motoru | AGPL-3.0 |
 | PySide6 (Qt) | Arayüz | LGPL-3.0 |
+| pymupdf-fonts (Noto Sans) | PDF'e gömülen Türkçe karakterli yazı tipi | SIL OFL 1.1 |
 | pytest | Test | MIT |

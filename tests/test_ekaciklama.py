@@ -72,6 +72,20 @@ def test_metin_kutusu_turkce(b):
         b.ek_metin_degistir(0, xref, "  ")
 
 
+def test_metin_kutusu_dolgu_kenar(b):
+    xref = b.ek_metin_kutusu(0, (100, 300, 300, 340), "Çerçeveli ışık", dolgu="#fff9c4", kenarlik="#1565c0", boyut=14)
+    e = [x for x in b.ek_listele([0]) if x.xref == xref][0]
+    px = b.render(0, 2.0)
+    orta_y = int((e.rect[1] + e.rect[3]) / 2 * 2)
+    seritte = [px.pixel(x, orta_y) for x in range(int(e.rect[0] * 2) - 2, int(e.rect[0] * 2) + 5)]
+    ic = px.pixel(int(e.rect[2] * 2) - 8, int(e.rect[3] * 2) - 8)
+    assert any(c[2] > c[0] + 60 for c in seritte)  # mavi kenarlık
+    assert ic == (255, 249, 196)          # sarı dolgu
+    b.ek_renk_degistir(0, xref, "#ff0000")  # yazı rengi değişince kenarlık/dolgu korunur
+    px = b.render(0, 2.0)
+    assert px.pixel(int(e.rect[2] * 2) - 8, int(e.rect[3] * 2) - 8) == (255, 249, 196)
+
+
 def test_bul_sil_tasi(b):
     xref = b.ek_sekil(0, "dikdortgen", (100, 100), (200, 160))
     e = b.ek_bul(0, (150, 130))
@@ -196,3 +210,20 @@ def test_resim_yerlestir(b):
     assert koyu_piksel(b, 0, (300, 600, 400, 650)) > 1000
     with pytest.raises(BelgeHatasi):
         b.resim_yerlestir(0, (10, 10, 10, 10), png.tobytes("png"))
+
+
+def test_kayit_yazi_tipini_kucultur(tmp_path):
+    b = Belge.yeni(5)
+    for i in range(5):
+        b.ek_metin_kutusu(i, (100, 100, 300, 140), "Işık ığüşöç İĞÜŞÖÇ")
+        b.ek_metin_kutusu(i, (100, 200, 300, 240), "Kalın metin", kalin=True)
+    hedef = tmp_path / "kucuk.pdf"
+    b.kaydet(hedef)
+    assert hedef.stat().st_size < 120 * 1024  # tam yazı tipi 10 kez gömülseydi >500 KB olurdu
+    # çalışan belgede yazı tipi tam kalır: sonradan eklenen metin eksik harf içermez
+    xref = b.ek_metin_kutusu(0, (100, 400, 300, 440), "Şğıİ öçü")
+    c = Belge.ac(hedef)
+    assert len(c.ek_listele()) == 10 and koyu_piksel(c, 0, c.ek_listele([0])[0].rect) > 100
+    px = b.render(0, 2.0)
+    e = [x for x in b.ek_listele([0]) if x.xref == xref][0]
+    assert koyu_piksel(b, 0, e.rect) > 100

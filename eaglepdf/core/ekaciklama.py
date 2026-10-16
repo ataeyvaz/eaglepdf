@@ -23,6 +23,7 @@ ISARET_TURLERI = ("vurgu", "alti", "ustu", "dalga")
 SEKIL_TURLERI = ("cizgi", "ok", "dikdortgen", "elips")
 TASINABILIR = {"Text", "FreeText", "Square", "Circle"}
 STIL_ANAHTARI = "EaglePDFStil"  # metin kutusunun kalın/italik bilgisi ("B", "I", "BI")
+KENAR_ANAHTARI = "EaglePDFKenar"  # metin kutusu kenarlık rengi ("r g b", 0–1)
 
 
 def renk_rgb(renk) -> tuple[float, float, float]:
@@ -99,10 +100,12 @@ class EkAciklamaIslemleri:
         a._sayfa_tutucu = sayfa_nesnesi  # PyMuPDF sayfaya zayıf bağ tutar; sayfa çöpe gitmesin
         return a
 
-    @staticmethod
-    def _bilgi(a: pymupdf.Annot, sayfa: int) -> EkAciklama:
+    def _bilgi(self, a: pymupdf.Annot, sayfa: int) -> EkAciklama:
         tur = a.type[1]
-        renk = a.colors.get("stroke") or a.colors.get("fill") or ()
+        if tur == "FreeText":  # kullanıcıya görünen renk yazı rengidir (dolgu /C'de tutulur)
+            renk = self._metin_stili(a)[1]
+        else:
+            renk = a.colors.get("stroke") or a.colors.get("fill") or ()
         info = a.info
         r = a.rect
         return EkAciklama(sayfa, a.xref, tur, TUR_ETIKETLERI.get(tur, tur), (r.x0, r.y0, r.x1, r.y1),
@@ -193,9 +196,9 @@ class EkAciklamaIslemleri:
         r = pymupdf.Rect(rect).normalize()
         r = pymupdf.Rect(r.x0, r.y0, max(r.x1, r.x0 + 40), max(r.y1, r.y0 + boyut * 1.6))
         a = p.add_freetext_annot(r, "x", fontsize=boyut, fontname="helv", text_color=renk_rgb(renk),
-                                 fill_color=renk_rgb(dolgu) if dolgu else None,
-                                 border_color=renk_rgb(kenarlik) if kenarlik else None,
-                                 border_width=1 if kenarlik else 0)
+                                 fill_color=renk_rgb(dolgu) if dolgu else None)
+        if kenarlik:  # PyMuPDF kenarlık rengini yalnızca zengin metinde alır; kendi görünümümüzde çiziyoruz
+            self._doc.xref_set_key(a.xref, KENAR_ANAHTARI, "(%.3f %.3f %.3f)" % renk_rgb(kenarlik))
         a.set_info(title=yazar, content=metin)
         self._doc.xref_set_key(a.xref, STIL_ANAHTARI, f"({'B' if kalin else ''}{'I' if italik else ''})")
         self._metin_gorunumu(p, a, metin)
@@ -219,8 +222,10 @@ class EkAciklamaIslemleri:
         boyut, renk, kalin, italik = self._metin_stili(a)
         kaynak = yazitipi.kaynak_adi(kalin, italik)
         tampon = yazitipi.tampon(kalin, italik)
-        dolgu, kenar = a.colors.get("fill"), a.colors.get("stroke")
-        kenar_kalinlik = a.border.get("width", 0) if kenar else 0
+        dolgu = tuple(a.colors.get("stroke") or ()) or None  # PyMuPDF serbest metinde dolguyu /C içinde tutar
+        kenar_deger = self._doc.xref_get_key(a.xref, KENAR_ANAHTARI)[1]
+        kenar = tuple(float(x) for x in kenar_deger.split()) if kenar_deger and kenar_deger != "null" else None
+        kenar_kalinlik = 1 if kenar else 0
         r = a.rect
         w, h = r.width, r.height
         pay = 3.0
@@ -390,6 +395,10 @@ class EkAciklamaIslemleri:
                 else:
                     w.field_value = str(deger)
                 w.update()
+                try:
+                    self._doc.need_appearances(True)  # başka okuyucular alan görünümünü Türkçe harflerle yeniden üretsin
+                except Exception:
+                    pass
                 return
         raise BelgeHatasi("Form alanı bulunamadı.")
 
