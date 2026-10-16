@@ -16,6 +16,7 @@ from .duzenleme import DuzenlemeIslemleri
 from .ekaciklama import EkAciklamaIslemleri
 from .gecmis import Gecmis, belgeyi_degistir, geri_alinabilir
 from .hatalar import BelgeHatasi, ParolaGerekli
+from .ocr import OcrIslemleri
 
 SAYFA_BOYUTLARI = {"A3": (842, 1191), "A4": (595, 842), "A5": (420, 595), "Letter": (612, 792), "Legal": (612, 1008)}
 
@@ -61,7 +62,7 @@ def _gecici_yaz(kaydet_fn, hedef: Path, yerine_koymadan_once=None):
         raise
 
 
-class Belge(EkAciklamaIslemleri, DuzenlemeIslemleri):
+class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
     def __init__(self, doc: pymupdf.Document, yol: Path | None):
         self._doc = doc
         self._gecmis = Gecmis()

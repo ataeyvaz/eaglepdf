@@ -17,6 +17,7 @@ from . import simgeler, theme
 from .aciklama_arayuzu import AciklamaArayuzu
 from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
+from .ocr_arayuzu import OcrArayuzu
 from .duzenleme_arayuzu import DuzenlemeArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
 from .hakkinda import HakkindaPenceresi
@@ -57,7 +58,7 @@ class SayfaKutusu(QLineEdit):
         self.valueChanged.emit(v)
 
 
-class AnaPencere(KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
+class AnaPencere(OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
         self.belge: Belge | None = None
@@ -285,6 +286,7 @@ class AnaPencere(KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuz
         self._aciklama_kur()
         self._duzenleme_kur()
         self._donusum_kur()
+        self._ocr_kur()
         self._koruma_kur()
 
     # --- belge açma/kapama ---

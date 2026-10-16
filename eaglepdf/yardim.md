@@ -104,6 +104,12 @@ Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınab
 - **PDF Karşılaştır…:** iki belgeyi sayfa sayfa karşılaştırır. Sol listede farklı sayfalar kırmızı görünür; sağda değişen yerlerin kırmızı işaretli görüntüsü ve eklenen/silinen kelimeler gösterilir. Sayfa sayıları farklıysa fazla sayfalar belirtilir.
 - **Tarayıcıdan PDF Oluştur…:** Windows'un tarama penceresiyle sayfaları tarar (isterseniz art arda birkaç sayfa), tek PDF olarak kaydeder ve açar. Bu özellik gerçek bir tarayıcıyla henüz denenmedi; sorun yaşarsanız geri bildirin.
 
+<!-- konu: ocr | OCR (Taranmış Belgeler) -->
+- **OCR → Aranabilir PDF Yap…:** taranmış (yalnızca resimden oluşan) sayfalara görünmez bir metin katmanı ekler. Görünüm değişmez; ama arama, metin seçme ve kopyalama çalışır. Sayfa aralığı ve dil seçebilirsiniz (Türkçe + İngilizce önerilir). Metni olan sayfalar atlanır. Sonucu beğenmezseniz **Geri Al** yapın; **İptal** ederseniz belge değişmez. Kaydetmek için Dosya → Farklı Kaydet.
+- **OCR → Bölgeden Metin Çıkar:** sayfada bir alan sürükleyin; alandaki yazı okunur, bir pencerede gösterilir ve panoya kopyalanabilir. Belge değişmez.
+- **Dönüştürme:** taranmış belgeyi Word, Excel, HTML ya da metne dönüştürürken sayfalar otomatik OCR'lanır (özgün dosya değişmez). Word çıktısında taranmış sayfaların yalnızca paragrafları gelir; sayfa düzeni korunmaz.
+- **Dil verisi:** OCR için `tur.traineddata` (ve `eng.traineddata`) dosyaları `%APPDATA%\{APP_NAME}	essdata` klasöründe bulunmalıdır; kurulum sırasında konur. Yoksa uygulama sizi bu klasöre yönlendirir. Okuma kalitesi tarama kalitesine bağlıdır (200 dpi ve üzeri, düz, temiz sayfa en iyisidir); büyük/küçük ı–i ve İ–I gibi benzer harfler zaman zaman karışabilir. Döndürülmüş sayfalar şimdilik atlanır.
+
 <!-- konu: koruma | Koruma (Parola ve İzinler) -->
 - **Koruma → Parola Ekle…:** belgeyi AES-256 ile korumalı yeni bir dosyaya kaydeder; açık belge ve özgün dosya değişmez. *Açma parolası* belgeyi açarken sorulur. *Sahip parolası* aşağıdaki kısıtlamaları (yazdırma, kopyalama, düzenleme vb.) kaldırmak içindir; boş bırakılırsa açma parolası kullanılır. Yalnızca sahip parolası verirseniz belge herkese açılır ama kısıtlamalar uygulanır. **Parolayı unutursanız belge kurtarılamaz.**
 - **Koruma → Parolayı Kaldır…:** parolayla açtığınız belgenin parolasız bir kopyasını kaydeder.

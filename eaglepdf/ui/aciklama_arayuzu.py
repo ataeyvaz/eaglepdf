@@ -253,7 +253,7 @@ class AciklamaArayuzu:
     def _arac_eylemi(self, arac: str, sayfa: int, veri):
         if not self.belge:
             return
-        if self._duzenleme_eylemi(arac, sayfa, veri):
+        if self._duzenleme_eylemi(arac, sayfa, veri) or self._ocr_eylemi(arac, sayfa, veri):
             return
         b, renk, yazar = self.belge, self._renkler.get(arac, "#c62828"), self._yazar
         if arac in ISARET_ARACLARI:

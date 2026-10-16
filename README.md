@@ -24,6 +24,7 @@ Proje **GNU AGPL-3.0** (`LICENSE`), açık kaynak ve ticari amaçsız.
 | pymupdf-fonts (Noto Sans) | PDF'e gömülen Türkçe karakterli yazı tipi | SIL OFL 1.1 |
 | pdf2docx, python-docx, openpyxl, python-pptx | Word / Excel / PowerPoint dönüştürme | MIT |
 | mammoth | Word → HTML (Word'den PDF) | BSD-2-Clause |
+| Tesseract OCR (PyMuPDF içinde) + tessdata_fast `tur`/`eng` | metin tanıma (OCR); dil verisi `%APPDATA%\<Ad>	essdata` içine konur | Apache-2.0 |
 | NumPy, Pillow, OpenCV (headless, pdf2docx ile gelir) | Görüntü işleme, resim biçimleri | BSD / HPND / Apache-2.0 |
 | comtypes | Tarayıcıdan sayfa alma (WIA) | MIT |
 | pytest | Test | MIT |

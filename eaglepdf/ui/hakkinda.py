@@ -16,6 +16,7 @@ KATKILAR = [
     ("mammoth", "Word belgesini HTML'e çevirme", "BSD-2-Clause"),
     ("NumPy, Pillow, OpenCV (headless)", "görüntü işleme, resim biçimleri", "BSD / HPND / Apache-2.0"),
     ("comtypes", "tarayıcıdan sayfa alma (WIA)", "MIT"),
+    ("Tesseract OCR + tessdata_fast (tur, eng)", "metin tanıma (PyMuPDF içinde gelir; dil verisi ayrı)", "Apache-2.0"),
 ]
 GIZLILIK = "Tüm işlemler bu bilgisayarda yapılır; belgeleriniz hiçbir sunucuya gönderilmez."
 LISANS = f"{APP_NAME} açık kaynaktır (GNU AGPL-3.0). Ticari amaç taşımaz."

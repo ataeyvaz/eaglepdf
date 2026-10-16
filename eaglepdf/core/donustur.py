@@ -19,6 +19,7 @@ import numpy as np
 import pymupdf
 
 from . import belge as belge_modulu
+from . import ocr
 from .belge import Belge, BelgeHatasi, aralik_coz
 
 RESIM_BICIMLERI = {"png": "PNG", "jpg": "JPEG", "bmp": "BMP", "tiff": "TIFF"}
@@ -150,12 +151,27 @@ def _metin_var_mi(b: Belge, liste: list[int]) -> bool:
     return any(b._doc[i].get_text().strip() for i in liste)
 
 
+def _metni_hazirla(b: Belge, liste: list[int], ilerleme=None):
+    """Seçili sayfalarda metin yoksa (taranmış) ve OCR dil verisi kuruluysa, bellekteki kopyaya OCR metni ekler
+    (kaynak dosya değişmez). Hâlâ metin yoksa anlaşılır hata verir."""
+    eksik = b.metinsiz_sayfalar(liste)
+    if eksik and ocr.hazir_mi():
+        try:
+            b.aranabilir_yap(eksik, ilerleme=ilerleme)
+        except ocr.OcrIptal:
+            raise Iptal("İşlem iptal edildi.") from None
+    if not _metin_var_mi(b, liste):
+        if ocr.hazir_mi():
+            raise BelgeHatasi("Belgede metin bulunamadı; sayfalar OCR ile de okunamadı (boş ya da çok bulanık olabilir).")
+        raise BelgeHatasi("Belgede metin bulunamadı (taranmış sayfalar olabilir). OCR için Türkçe dil verisi kurulmalı: "
+                          "Yardım → Nasıl Kullanılır → OCR.")
+
+
 def pdf_metin(yol, klasor, sayfalar=None, sayfa_ayraci: bool = True, parola=None, ilerleme=None) -> Path:
     b = _ac(yol, parola)
     try:
         liste = _sayfa_listesi(b, sayfalar)
-        if not _metin_var_mi(b, liste):
-            raise BelgeHatasi("Belgede metin bulunamadı (taranmış sayfalar olabilir; önce OCR gerekir).")
+        _metni_hazirla(b, liste, ilerleme)
         parcalar = []
         for n, i in enumerate(liste):
             _ilerle(ilerleme, n, len(liste))
@@ -182,8 +198,7 @@ def pdf_html(yol, klasor, sayfalar=None, parola=None, ilerleme=None) -> Path:
     b = _ac(yol, parola)
     try:
         liste = _sayfa_listesi(b, sayfalar)
-        if not _metin_var_mi(b, liste):
-            raise BelgeHatasi("Belgede metin bulunamadı (taranmış sayfalar olabilir; önce OCR gerekir).")
+        _metni_hazirla(b, liste, ilerleme)
         govde = []
         for n, i in enumerate(liste):
             _ilerle(ilerleme, n, len(liste))
@@ -201,14 +216,33 @@ def pdf_html(yol, klasor, sayfalar=None, parola=None, ilerleme=None) -> Path:
 
 
 # ---------------------------------------------------------------- PDF → Word
+def _ocr_word(b: Belge, liste: list[int], hedef: Path, ilerleme=None):
+    """OCR ile okunmuş sayfalardan düz Word belgesi (pdf2docx görünmez metni görmez): sayfa başına paragraflar."""
+    import docx
+    d = docx.Document()
+    for n, i in enumerate(liste):
+        _ilerle(ilerleme, n, len(liste))
+        if n:
+            d.add_page_break()
+        for blok in b._doc[i].get_text("blocks", sort=True):
+            if blok[6] == 0 and blok[4].strip():  # 0 = metin bloğu
+                d.add_paragraph(" ".join(blok[4].replace(" ", " ").split()))
+    _yaz_gecici(hedef, lambda g: d.save(g))
+    _ilerle(ilerleme, len(liste), len(liste))
+
+
 def pdf_word(yol, klasor, sayfalar=None, parola=None, ilerleme=None) -> Path:
-    """pdf2docx (MIT) ile: paragraflar, biçim, tablolar ve resimler korunmaya çalışılır."""
+    """pdf2docx (MIT) ile: paragraflar, biçim, tablolar ve resimler korunmaya çalışılır.
+    Taranmış sayfalarda OCR metni kullanılır (yalnızca paragraflar; sayfa düzeni korunmaz)."""
     from pdf2docx import Converter
     b = _ac(yol, parola)
     try:
         liste = _sayfa_listesi(b, sayfalar)
-        if not _metin_var_mi(b, liste):
-            raise BelgeHatasi("Belgede metin bulunamadı (taranmış sayfalar olabilir; önce OCR gerekir).")
+        _metni_hazirla(b, liste, ilerleme)
+        if b.degisti:  # OCR eklendi
+            hedef = benzersiz_yol(klasor, Path(yol).stem, ".docx")
+            _ocr_word(b, liste, hedef, ilerleme)
+            return hedef
     finally:
         b.kapat()
     hedef = benzersiz_yol(klasor, Path(yol).stem, ".docx")
@@ -255,8 +289,7 @@ def pdf_excel(yol, klasor, sayfalar=None, sayi_algila: bool = True, parola=None,
     b = _ac(yol, parola)
     try:
         liste = _sayfa_listesi(b, sayfalar)
-        if not _metin_var_mi(b, liste):
-            raise BelgeHatasi("Belgede metin bulunamadı (taranmış sayfalar olabilir; önce OCR gerekir).")
+        _metni_hazirla(b, liste, ilerleme)
         wb = openpyxl.Workbook()
         wb.remove(wb.active)
         tablo_sayisi = 0
