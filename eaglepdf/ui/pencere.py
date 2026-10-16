@@ -20,6 +20,7 @@ from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
+from .oturum import BelgeOturumu
 from .ozellikler_penceresi import OzelliklerPenceresi
 from .toplu_yazdir import TopluYazdirPenceresi, toplu_yazdir
 from .ocr_arayuzu import OcrArayuzu
@@ -66,7 +67,8 @@ class SayfaKutusu(QLineEdit):
 class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
-        self.belge: Belge | None = None
+        self._oturumlar: list[BelgeOturumu] = []   # açık belgeler (sekmeler); şimdilik en çok 1
+        self._etkin = -1                           # etkin oturumun sırası, yoksa -1
         self.ayarlar = (QSettings(ayar_dosyasi, QSettings.IniFormat) if ayar_dosyasi
                         else QSettings(QSettings.IniFormat, QSettings.UserScope, APP_NAME, APP_NAME))
         self._sonuclar: list = []
@@ -77,6 +79,23 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._menuleri_kur()
         self.gorunumu_yukle()
         self._durumu_guncelle()
+
+    # --- belge oturumları ---
+    @property
+    def belge(self) -> Belge | None:
+        """Etkin oturumun belgesi (yoksa None). Pencere ve karışımlardaki tüm okumalar bunu kullanır."""
+        return self._oturumlar[self._etkin].belge if 0 <= self._etkin < len(self._oturumlar) else None
+
+    @belge.setter
+    def belge(self, deger: Belge | None):
+        """None → tüm oturumları bırakır; Belge → etkin oturumun belgesini değiştirir (yoksa yeni oturum açar).
+        Belgeleri kapatmaz (çağıran kapatır)."""
+        if deger is None:
+            self._oturumlar, self._etkin = [], -1
+        elif self._etkin >= 0:
+            self._oturumlar[self._etkin] = BelgeOturumu(deger)
+        else:
+            self._oturumlar, self._etkin = [BelgeOturumu(deger)], 0
 
     # --- kurulum ---
     def _arayuz_kur(self):

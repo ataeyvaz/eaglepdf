@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅, sertifikalı dijital imza ✅. **Faz 1 artıkları: ayarlar ✅, belge özellikleri ✅, toplu yazdırma ✅**; kalan tek artık: belge sekmeleri (ertelendi, §2). Testler: `.venv\Scripts\python -m pytest` → **216 geçti** (~2 dk).
+Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅, sertifikalı dijital imza ✅. **Faz 1 artıkları: ayarlar ✅, belge özellikleri ✅, toplu yazdırma ✅**; kalan tek artık: belge sekmeleri (ertelendi, §2). Testler: `.venv\Scripts\python -m pytest` → **222 geçti** (~2 dk).
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -22,7 +22,7 @@ Faz 1–4 **tamam**; **Faz 1–5 tamam** (artıklar hariç): koruma ✅, OCR ✅
 
 2. ~~**Koruma**~~ ✅ yapıldı (`core/koruma.py`, `ui/koruma_arayuzu.py`, testler `test_koruma*.py`). Not: açık belgenin üzerine yazılmaz, korumalı/parolasız **kopya** yazılır.
 3. ~~**Sertifikalı dijital imza**~~ ✅ yapıldı (`core/dijital_imza.py`, `ui/imza_arayuzu.py`; testler `test_dijital_imza.py`, `test_imza_arayuzu.py`). Sonra çözülecekler §7'de.
-4. Artık: **belge sekmeleri** — plan hazır: `docs/sekmeler-plani.md` (onay bekliyor; açık kararlar §8 orada). (~~Ayarlar, belge özellikleri, toplu yazdırma~~ ✅) (~~Ayarlar penceresi~~ ✅)
+4. Artık: **belge sekmeleri** — plan `docs/sekmeler-plani.md`, kararlar onaylandı. **Adım 1 ✅** (`ui/oturum.py` BelgeOturumu + EN_COK_SEKME; `AnaPencere.belge` property/setter, `_oturumlar`, `_etkin`; davranış aynı). **Sıradaki: adım 2** (QTabBar, `ac()` yeni sekme/var olanı etkinleştir, `_oturum_degistir`, sekme başlığı/işareti). (~~Ayarlar, belge özellikleri, toplu yazdırma~~ ✅) (~~Ayarlar penceresi~~ ✅)
 5. (İsteğe bağlı) üstbilgi/altbilgi/sayfa numarası için "kaldır"; PDFgear'ı elle açıp `docs/ozellikler.md`'deki ⚠ noktaları gözlemle.
 
 ## 3. Çalışma sistemi (her adımda)
@@ -90,7 +90,8 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 - 2026-10-16: Görsel imza bir **resim**dir (sertifikasız); sertifikalı dijital imza Faz 5. Resim ve mühür **Stamp ek açıklaması** olarak eklenir (taşınır/boyutlandırılır, Düzleştir ile sayfaya işlenir).
 - 2026-10-16: **Metin düzenleme:** orijinal yazı tipi şimdilik korunmuyor; paragraf silinip Noto Sans ile yeniden yazılır (döndürülmüş/taranmış sayfada yok) — yardımda açıkça yazıldı.
 - 2026-10-16: Filigran isteğe bağlı içerik katmanına (OCG "EaglePDF Filigran") etiketlenir → **Sayfa → Filigranı Kaldır…** kayıttan sonra da çalışır.
-- 2026-10-16: Belge sekmeleri ertelenmişti (tek belge mimarisi). **2026-10-17: yeniden ele alındı** — plan `docs/sekmeler-plani.md`; önerilen mimari tek görüntüleyici + `BelgeOturumu` + `belge` property; kullanıcı onayı bekleniyor.
+- 2026-10-16: Belge sekmeleri ertelenmişti (tek belge mimarisi). **2026-10-17: yeniden ele alındı** — plan `docs/sekmeler-plani.md`; önerilen mimari tek görüntüleyici + `BelgeOturumu` + `belge` property.
+- 2026-10-17: **Sekme kararları onaylandı** (kullanıcı): mimari A (tek görüntüleyici + oturum), en çok 8 sekme, tek örnek (çift tık → mevcut pencerede sekme) adım 6 olarak ayrı, açılışta oturum geri yükleme varsayılan kapalı (Ayarlar'dan açılır), aynı dosya ikinci kez açılırsa mevcut sekmeye geçilir. Uygulama adım adım (plan §6); testler parça parça çalıştırılır, adım sonunda tam paket.
 - 2026-10-16: Dönüştürme bağımlılıkları (hepsi izin verici lisans): pdf2docx (MIT), python-docx (MIT), openpyxl (MIT), python-pptx (MIT), mammoth (BSD-2), numpy (BSD-3), Pillow (HPND), comtypes (MIT, tarayıcı). Word/Excel→PDF için Office gerekmez (mammoth/openpyxl → HTML → PyMuPDF Story).
 - 2026-10-16: Kullanıcı "sınırlar" ifadesinden rahatsız oldu → "sonra çözeceğimiz noktalar" dili kullanılır.
 
