@@ -17,6 +17,7 @@ from . import simgeler, theme
 from .aciklama_arayuzu import AciklamaArayuzu
 from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
+from .imza_arayuzu import ImzaArayuzu
 from .ocr_arayuzu import OcrArayuzu
 from .duzenleme_arayuzu import DuzenlemeArayuzu
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
@@ -58,7 +59,7 @@ class SayfaKutusu(QLineEdit):
         self.valueChanged.emit(v)
 
 
-class AnaPencere(OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
+class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
         self.belge: Belge | None = None
@@ -288,6 +289,7 @@ class AnaPencere(OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, Ac
         self._donusum_kur()
         self._ocr_kur()
         self._koruma_kur()
+        self._imza_kur()
 
     # --- belge açma/kapama ---
     def ac_sor(self):
@@ -406,6 +408,8 @@ class AnaPencere(OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, Ac
         return self._yaz(yol, uzerine_yaz=bool(self.belge.yol and yol.resolve() == self.belge.yol.resolve()))
 
     def _yaz(self, yol: Path, uzerine_yaz: bool) -> bool:
+        if not self._imzali_kayit_onayi():
+            return False
         try:
             self.belge.kaydet(yol, uzerine_yaz=uzerine_yaz)
         except (BelgeHatasi, OSError) as h:

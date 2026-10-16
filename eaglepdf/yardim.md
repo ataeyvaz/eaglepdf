@@ -116,6 +116,14 @@ Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınab
 - **Koruma → Belge İzinleri…:** açık belgede hangi işlemlere izin verildiğini gösterir.
 - Kısıtlamalar PDF okuyucularının uyumuna dayanır; EaglePDF bunlara uyar, ama her program uymak zorunda değildir. Güvenlik için asıl koruma açma parolasıdır.
 
+<!-- konu: dijital-imza | Dijital İmza (Sertifikalı) -->
+- **Resim imza ile dijital imza farklıdır.** Çizdiğiniz/yazdığınız imza yalnızca bir resimdir. *Dijital imza* ise belgeyi sertifikanızla mühürler: belge sonradan değişirse imza **geçersiz** görünür.
+- **Koruma → Sertifika Oluştur…:** adınıza kendinden imzalı bir sertifika (.pfx) üretir. Başka bilgisayarlar bu sertifikaya güvenmez; imzanın bozulmadığı doğrulanır ama kimliğiniz doğrulanmış sayılmaz. Resmî geçerlilik için bir sertifika otoritesinden aldığınız .pfx/.p12 dosyasını kullanın. Parolayı ve dosyayı güvenli saklayın; kurtarılamaz.
+- **Koruma → Dijital İmzala…:** sertifikayı ve parolasını seçin; görünür (köşede bir kutu) ya da görünmez imza, sayfa, neden/yer girebilirsiniz. İmzalı belge **yeni bir dosyaya** yazılır; özgün dosya değişmez. Birden çok kişi art arda imzalayabilir.
+- **Koruma → Boş İmza Alanı Ekle…:** belgeyi alan kişinin sonra imzalayacağı boş bir alan koyar. Dijital İmzala penceresinde “Mevcut boş alan” olarak seçilir.
+- **Koruma → İmzaları Doğrula…:** her imzanın bütünlüğünü, imzalayanı ve sertifikaya güvenilip güvenilmediğini gösterir. “Kimlik doğrulanmadı” kendinden imzalı sertifikalarda normaldir.
+- **Önemli:** imzalı belgeyi düzenleyip kaydederseniz mevcut imzalar geçersiz olur; kaydetmeden önce uyarılırsınız. Değişiklik yapılmış imzalı belgeye yeni imza eklenemez (önce geri alın). Zaman damgası (RFC 3161) ve uzun süreli doğrulama şimdilik yok.
+
 <!-- konu: kisayollar | Klavye Kısayolları -->
 | Kısayol | İş |
 |---|---|

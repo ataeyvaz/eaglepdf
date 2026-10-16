@@ -10,3 +10,6 @@ mammoth>=1.8        # BSD-2: Word → HTML (Word'den PDF için)
 numpy>=1.26         # BSD-3: görüntü karşılaştırma
 Pillow>=10          # HPND: resim biçimleri
 comtypes>=1.4; sys_platform == "win32"   # MIT: tarayıcı (WIA)
+pyhanko>=0.30       # MIT: sertifikalı dijital imza (cryptography Apache/BSD, lxml BSD, aiohttp Apache/MIT ile gelir)
+pyhanko-certvalidator>=0.27  # MIT: imza/sertifika doğrulama
+uharfbuzz>=0.40     # Apache-2.0: görünür imza kutusunda Türkçe yazı tipi
