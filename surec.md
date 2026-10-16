@@ -11,9 +11,11 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Çekirdek (`core/belge.py`) | aç, parola, render, Türkçe arama, sayfa sil/döndür/ekle/sırala/çıkar, birleştir, böl, güvenli kayıt | 11 test geçti | ✅ |
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım, hakkında, kırmızı tema | Görüntüleyici (sürekli kaydırma, tembel çizim, yakınlaştırma), küçük resim + yer imi paneli, arama çubuğu, sayfa işlemleri menüsü, birleştir/böl pencereleri, yardım, hakkında; 4 arayüz testi | ✅ |
 | Faz 1: görünüm ve araçlar | tek/çift/sürekli sayfa, el + metin seçme (kopyala), gece modu, yazdırma (+aralık/seçili), çizgi simgeler | tamamlandı; 20 test geçti | ✅ |
+| Faz 2 çekirdek (`core/ekaciklama.py`, `gecmis.py`, `yazitipi.py`) | vurgu/altı/üstü/dalga, çizim, not, şekil, metin kutusu (Türkçe, Noto Sans), bul/sil/taşı/renk/metin, bağlantı, yer imi, form alanları, görsel imza yerleştirme, geri al/yinele | 11 yeni test geçti (toplam 31) | ✅ |
+| Faz 2 arayüz | açıklama araç çubuğu, seç/taşı, açıklama paneli, form doldurma, imza, bağlantı/yer imi düzenleme, geri al/yinele | — | 🔄 |
 | Faz 1: belge sekmeleri | çoklu belge | yapılmadı (bkz. Kararlar) | ⏸ |
 
-Testler: `.venv\Scripts\python -m pytest` (20 geçti)
+Testler: `.venv\Scripts\python -m pytest` (31 geçti)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. **Faz 2'ye başla:** ek açıklama + form (vurgula, altını çiz/üstünü çiz, serbest çizim, not, metin kutusu, şekil, form doldurma, görsel imza, bağlantı, yer imi ekle/düzenle, ek açıklama listesi).
@@ -41,6 +43,7 @@ Testler: `.venv\Scripts\python -m pytest` (20 geçti)
 - 2026-10-16: **Arayüz tamamen Türkçe; OCR'da Türkçe (`tur`) zorunlu** (PDFgear'da yok, ayrıca eklenecek; Ibı/İi/ş/ğ testi) — kullanıcı isteği.
 - 2026-10-16: **Faz sırası onaylandı** (okuyucu/sayfa → ek açıklama/form → düzenleme → dönüştürme/sıkıştırma → OCR/koruma/imza) — kullanıcı. **Yerel çeviri ve sohbet (yapay zekâ) alınmayacak** (ücretsiz uygun model yok) — kullanıcı.
 - 2026-10-16: **Belge sekmeleri ertelendi:** görüntüleyici/panel yapısı tek belgeye göre; sekme için çoklu `Belge` + sekme başına görünüm durumu gerekir. Şimdilik her belge ayrı pencerede (EaglePDF.bat ile yeni örnek). İstenirse Faz 1 artığı olarak yapılır.
+- 2026-10-16: **Türkçe metin gömme:** PDF yerleşik yazı tipleri ş/ğ/ı/İ'yi desteklemez; metin kutusu/filigran vb. için Noto Sans (`pymupdf-fonts`, SIL OFL) gömülür ve metin kutusunun görünümü (AP) elle üretilir. Geri al/yinele: değişiklik öncesi belge baytları (30 adım / 300 MB sınırı).
 - 2026-10-16: **Arayüz vurgu rengi KIRMIZI** (`#c62828`, `ui/theme.py`); yerleşim Eagle Office düzeniyle aynı (başlık şeridi, menü, araç çubuğu) — kullanıcı isteği. Sözcük/Tabcel'in mavisinden bilerek ayrılır.
 - 2026-10-16: Kayıt davranışı: Kaydet açık dosyanın üzerine yazar ama onay sorar; Farklı Kaydet varsayılan önerilir; her kayıt geçici dosya → yerine koy.
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.

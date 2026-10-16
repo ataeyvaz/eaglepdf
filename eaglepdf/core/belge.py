@@ -12,16 +12,11 @@ from pathlib import Path
 import pymupdf
 
 from .. import metin_tr
+from .ekaciklama import EkAciklamaIslemleri
+from .gecmis import Gecmis, belgeyi_degistir, geri_alinabilir
+from .hatalar import BelgeHatasi, ParolaGerekli
 
 SAYFA_BOYUTLARI = {"A3": (842, 1191), "A4": (595, 842), "A5": (420, 595), "Letter": (612, 792), "Legal": (612, 1008)}
-
-
-class BelgeHatasi(Exception):
-    """Kullanıcıya gösterilebilir (Türkçe mesajlı) hata."""
-
-
-class ParolaGerekli(BelgeHatasi):
-    pass
 
 
 def aralik_coz(metin: str, sayfa_sayisi: int) -> list[int]:
@@ -65,9 +60,10 @@ def _gecici_yaz(kaydet_fn, hedef: Path, yerine_koymadan_once=None):
         raise
 
 
-class Belge:
+class Belge(EkAciklamaIslemleri):
     def __init__(self, doc: pymupdf.Document, yol: Path | None):
         self._doc = doc
+        self._gecmis = Gecmis()
         self.yol = yol
         self.degisti = False
 
@@ -160,12 +156,14 @@ class Belge:
         return sonuc
 
     # --- sayfa işlemleri (bellekte; kaydedene dek dosyaya yazılmaz) ---
+    @geri_alinabilir
     def sayfa_sil(self, sayfalar: list[int]):
         if len(set(sayfalar)) >= self.sayfa_sayisi:
             raise BelgeHatasi("Belgenin tüm sayfaları silinemez.")
         self._doc.delete_pages(sorted(set(sayfalar)))
         self.degisti = True
 
+    @geri_alinabilir
     def sayfa_dondur(self, sayfalar: list[int], aci: int):
         """aci: 90 (sağa), -90 (sola), 180."""
         for i in sayfalar:
@@ -173,12 +171,14 @@ class Belge:
             sayfa.set_rotation((sayfa.rotation + aci) % 360)
         self.degisti = True
 
+    @geri_alinabilir
     def bos_sayfa_ekle(self, sonra: int, boyut: str = "A4"):
         """`sonra` sayfasından sonra boş sayfa ekler (-1: en başa)."""
         gen, yuk = SAYFA_BOYUTLARI[boyut]
         self._doc.new_page(pno=sonra + 1, width=gen, height=yuk)
         self.degisti = True
 
+    @geri_alinabilir
     def sayfa_tasi(self, sayfa: int, hedef: int):
         """`sayfa`yı `hedef` konumuna taşır (hedef = taşıma sonrası 0 tabanlı yeni sıra)."""
         sira = list(range(self.sayfa_sayisi))
@@ -186,12 +186,14 @@ class Belge:
         self._doc.select(sira)
         self.degisti = True
 
+    @geri_alinabilir
     def sirala(self, yeni_sira: list[int]):
         if sorted(yeni_sira) != list(range(self.sayfa_sayisi)):
             raise BelgeHatasi("Sayfa sırası geçersiz.")
         self._doc.select(yeni_sira)
         self.degisti = True
 
+    @geri_alinabilir
     def sona_ekle(self, kaynak: "Belge | Path | str", sayfalar: list[int] | None = None):
         """Başka bir PDF'in sayfalarını (varsayılan: hepsi) sona ekler."""
         diger, kapat = (kaynak, False) if isinstance(kaynak, Belge) else (Belge.ac(kaynak), True)
@@ -202,6 +204,33 @@ class Belge:
             if kapat:
                 diger.kapat()
         self.degisti = True
+
+    # --- geri al / yinele ---
+    @property
+    def geri_alinabilir_mi(self) -> bool:
+        return bool(self._gecmis.geri)
+
+    @property
+    def yinelenebilir_mi(self) -> bool:
+        return bool(self._gecmis.ileri)
+
+    def geri_al(self) -> bool:
+        if not self._gecmis.geri:
+            return False
+        self._gecmis.ileri.append((self._doc.tobytes(), self.degisti))
+        veri, degisti = self._gecmis.geri.pop()
+        belgeyi_degistir(self, veri)
+        self.degisti = degisti
+        return True
+
+    def yinele(self) -> bool:
+        if not self._gecmis.ileri:
+            return False
+        self._gecmis.geri.append((self._doc.tobytes(), self.degisti))
+        veri, _degisti = self._gecmis.ileri.pop()
+        belgeyi_degistir(self, veri)
+        self.degisti = True
+        return True
 
     # --- kayıt ---
     def kaydet(self, hedef, uzerine_yaz: bool = False):
