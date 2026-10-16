@@ -20,6 +20,13 @@ Araç çubuğundaki iki araçtan biri her zaman açıktır:
 - **El Aracı:** sayfayı fareyle tutup sürükleyerek kaydırırsınız.
 - **Metin Seçme Aracı:** metnin üzerinde sürükleyerek kelime kelime seçersiniz; seçim sayfalar arasında da sürebilir. **Ctrl+C** (Düzen → Seçili Metni Kopyala) seçili metni panoya alır, **Esc** seçimi kaldırır. Taranmış (resim) sayfalarda metin yoktur, seçilemez; bunun için ileride OCR eklenecek.
 
+<!-- konu: ayarlar | Ayarlar -->
+**Dosya → Ayarlar…** (Ctrl+,) tercihlerinizi tek yerden değiştirir; Tamam'a basınca hemen uygulanır.
+- **Genel:** açıklamalarda görünecek yazar adı; belge açılırken yakınlaştırma (sayfa genişliğine sığdır, tam sayfa, %100); sayfa düzeni (sürekli/tek, çift sayfa); gece modu; varsayılan araç (El / Metin seçme); son kullanılanlar listesini temizleme.
+- **Klasörler ve OCR:** dönüştürme çıktı klasörü (boşsa dosyanın yanına yazılır) ve OCR dili.
+- **Dosya İlişkisi:** uygulamayı PDF'lerin sağ tık → “Birlikte aç” listesine ekler/kaldırır (yalnızca sizin kullanıcı hesabınız; yönetici izni gerekmez). Windows varsayılan uygulamayı programdan değiştirmeye izin vermediği için ekledikten sonra “Varsayılan uygulamalar” ekranından “.pdf” için bu uygulamayı siz seçersiniz.
+- Arayüz dili Türkçedir; başka dil seçeneği şimdilik yok.
+
 <!-- konu: yazdirma | Yazdırma -->
 **Dosya → Yazdır** (Ctrl+P) yazıcı penceresini açar. Tüm belgeyi, geçerli sayfayı, bir sayfa aralığını ya da küçük resim panelinde seçtiğiniz sayfaları yazdırabilirsiniz. Her sayfa kâğıda orantısı bozulmadan sığdırılır. Yazıcı yerine "Microsoft Print to PDF" seçerek de PDF üretebilirsiniz.
 
@@ -132,6 +139,7 @@ Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınab
 | Ctrl+S | Kaydet (açık dosyanın üzerine yazar, onay ister) |
 | Ctrl+W | Kapat |
 | Ctrl+P | Yazdır |
+| Ctrl+, | Ayarlar |
 | Ctrl+Z, Ctrl+Y | Geri al, yinele |
 | Del | Seçili açıklamayı sil (açıklama seçili değilse seçili sayfaları) |
 | Ctrl+C | Seçili metni kopyala |

@@ -22,7 +22,7 @@ def dil_secenekleri() -> list[tuple[str, str]]:
 
 
 class AranabilirPenceresi(QDialog):
-    def __init__(self, sayfa_sayisi: int, metinsiz: int, parent=None):
+    def __init__(self, sayfa_sayisi: int, metinsiz: int, parent=None, varsayilan_dil: str = ""):
         super().__init__(parent)
         self.setWindowTitle("Aranabilir PDF Yap (OCR)")
         self.setMinimumWidth(420)
@@ -37,6 +37,8 @@ class AranabilirPenceresi(QDialog):
         self.dil = QComboBox()
         for kod, ad in dil_secenekleri():
             self.dil.addItem(ad, kod)
+        if varsayilan_dil and self.dil.findData(varsayilan_dil) >= 0:
+            self.dil.setCurrentIndex(self.dil.findData(varsayilan_dil))
         form.addRow("Sayfalar:", self.sayfalar)
         form.addRow("Dil:", self.dil)
         yerlesim.addLayout(form)
@@ -114,7 +116,7 @@ class OcrArayuzu:
         b = self.belge
         if not b or not self._ocr_hazir_mi():
             return
-        d = AranabilirPenceresi(b.sayfa_sayisi, len(b.metinsiz_sayfalar()), self)
+        d = AranabilirPenceresi(b.sayfa_sayisi, len(b.metinsiz_sayfalar()), self, str(self.ayarlar.value("ocr_dil", "")))
         if not d.exec():
             return
         sayfalar = d.secili_sayfalar()
@@ -158,7 +160,8 @@ class OcrArayuzu:
             return True
         p1, p2 = veri
         rect = (min(p1[0], p2[0]), min(p1[1], p2[1]), max(p1[0], p2[0]), max(p1[1], p2[1]))
-        dil = dil_secenekleri()[0][0]
+        kodlar = [k for k, _ in dil_secenekleri()]
+        dil = str(self.ayarlar.value("ocr_dil", "")) if str(self.ayarlar.value("ocr_dil", "")) in kodlar else kodlar[0]
         QApplication.setOverrideCursor(self.cursor())
         try:
             metin = self.belge.bolgeden_metin(sayfa, rect, dil)

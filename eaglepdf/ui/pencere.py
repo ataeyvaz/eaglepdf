@@ -1,5 +1,6 @@
 """Ana pencere: başlık şeridi, menüler, araç çubuğu, paneller ve görüntüleyici."""
 
+import os
 from pathlib import Path
 
 from PySide6.QtCore import QSettings, QSize, Qt, Signal
@@ -17,6 +18,7 @@ from . import simgeler, theme
 from .aciklama_arayuzu import AciklamaArayuzu
 from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
+from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
 from .ocr_arayuzu import OcrArayuzu
 from .duzenleme_arayuzu import DuzenlemeArayuzu
@@ -165,6 +167,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.e_farkli = self._eylem("Farklı Kaydet…", self.farkli_kaydet, "Ctrl+Shift+S", simge="kaydet")
         self.e_yazdir = self._eylem("Yazdır…", self.yazdir, "Ctrl+P", simge="yazdir")
         self.e_ozellik = self._eylem("Belge Özellikleri…", self.ozellikleri_goster)
+        self.e_ayarlar = self._eylem("Ayarlar…", self.ayarlar_ac, "Ctrl+,")
         self.e_kapat = self._eylem("Kapat", self.kapat, "Ctrl+W")
         self.e_cik = self._eylem("Çıkış", self.close, "Alt+F4")
         dosya = mb.addMenu("&Dosya")
@@ -177,6 +180,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         dosya.addAction(self.e_yazdir)
         dosya.addAction(self.e_ozellik)
         dosya.addSeparator()
+        dosya.addAction(self.e_ayarlar)
         dosya.addAction(self.e_kapat)
         dosya.addAction(self.e_cik)
         self._son_menusu_doldur()
@@ -319,7 +323,28 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.ayarlar.setValue("son_klasor", str(Path(yol).parent))
         self._son_ekle(str(Path(yol)))
         self._belge_goster(0)
-        self.goruntuleyici.genislige_sigdir()
+        self._acilis_yakinlastirma()
+
+    def _acilis_yakinlastirma(self):
+        secim = str(self.ayarlar.value("acilis_yakinlastirma", "genislik"))
+        if secim == "sayfa":
+            self.goruntuleyici.sayfaya_sigdir()
+        elif secim == "yuzde100":
+            self.goruntuleyici.olcek_ata(1.0)
+        else:
+            self.goruntuleyici.genislige_sigdir()
+
+    def ayarlar_ac(self):
+        d = AyarlarPenceresi(self.ayarlar, self)
+        if d.exec():
+            self.ayarlari_uygula()
+
+    def ayarlari_uygula(self):
+        """Ayarlar penceresinden sonra değişiklikleri canlı uygular."""
+        self._yazar = str(self.ayarlar.value("yazar", "") or os.environ.get("USERNAME", ""))
+        self.gorunumu_yukle()
+        self._son_menusu_doldur()
+        self.statusBar().showMessage("Ayarlar kaydedildi.", 3000)
 
     def _belgeyi_kapat_sessiz(self):
         if self.belge:
