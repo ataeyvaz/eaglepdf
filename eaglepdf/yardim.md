@@ -11,6 +11,17 @@
 - Sayfalar alt alta sürekli kayar. Sayfa kutusuna numara yazarak ya da Page Up / Page Down ile gezinebilirsiniz.
 - **Küçük Resimler** (F4) ve **Yer İmleri** paneli soldadır; birine tıklayınca o sayfaya gidilir.
 - **Tam ekran:** F11.
+- **Sayfa düzeni (Görünüm menüsü):** *Sürekli Kaydırma* sayfaları alt alta gösterir; *Tek Sayfa* her seferinde yalnızca bir sayfa gösterir (tekerlek ya da Page Up/Down ile sonraki sayfaya geçilir); *Çift Sayfa* iki sayfayı yan yana koyar. Seçiminiz bir sonraki açılışta hatırlanır.
+- **Gece Modu:** sayfa renklerini ters çevirerek koyu zemin üzerinde açık yazı gösterir; belgenin kendisi değişmez.
+
+<!-- konu: araclar | El Aracı ve Metin Seçme -->
+Araç çubuğundaki iki araçtan biri her zaman açıktır:
+
+- **El Aracı:** sayfayı fareyle tutup sürükleyerek kaydırırsınız.
+- **Metin Seçme Aracı:** metnin üzerinde sürükleyerek kelime kelime seçersiniz; seçim sayfalar arasında da sürebilir. **Ctrl+C** (Düzen → Seçili Metni Kopyala) seçili metni panoya alır, **Esc** seçimi kaldırır. Taranmış (resim) sayfalarda metin yoktur, seçilemez; bunun için ileride OCR eklenecek.
+
+<!-- konu: yazdirma | Yazdırma -->
+**Dosya → Yazdır** (Ctrl+P) yazıcı penceresini açar. Tüm belgeyi, geçerli sayfayı, bir sayfa aralığını ya da küçük resim panelinde seçtiğiniz sayfaları yazdırabilirsiniz. Her sayfa kâğıda orantısı bozulmadan sığdırılır. Yazıcı yerine "Microsoft Print to PDF" seçerek de PDF üretebilirsiniz.
 
 <!-- konu: arama | Arama -->
 **Düzen → Ara** (Ctrl+F) ile belgede metin arayın. Arama Türkçe büyük/küçük harfe duyarlıdır: *I* harfi *ı* ile, *İ* harfi *i* ile eşleşir. Sonuçlar sayfada işaretlenir; **F3** sonrakine, **Shift+F3** öncekine gider.
@@ -36,6 +47,9 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 | Ctrl+Shift+S | Farklı Kaydet |
 | Ctrl+S | Kaydet (açık dosyanın üzerine yazar, onay ister) |
 | Ctrl+W | Kapat |
+| Ctrl+P | Yazdır |
+| Ctrl+C | Seçili metni kopyala |
+| Esc | Seçimi kaldır / arama çubuğunu kapat |
 | Ctrl+F, F3, Shift+F3 | Ara, sonraki, önceki |
 | Ctrl++, Ctrl+-, Ctrl+0 | Yakınlaştır, uzaklaştır, %100 |
 | Ctrl+1, Ctrl+2 | Genişliğe, sayfaya sığdır |

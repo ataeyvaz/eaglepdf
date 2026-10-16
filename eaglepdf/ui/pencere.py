@@ -2,8 +2,9 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt
-from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtCore import QSettings, QSize, Qt, Signal
+from PySide6.QtGui import QAction, QActionGroup, QIntValidator, QKeySequence
+from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QFileDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QSpinBox, QSplitter,
     QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit,
@@ -12,28 +13,59 @@ from PySide6.QtWidgets import (
 from .. import APP_NAME, PAKET_ADI
 from ..core import belge as belge_modulu
 from ..core.belge import Belge, BelgeHatasi, ParolaGerekli
-from . import theme
-from .goruntuleyici import Goruntuleyici
+from . import simgeler, theme
+from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK, Goruntuleyici
 from .hakkinda import HakkindaPenceresi
 from .paneller import KucukResimler, YerImleri
 from .sayfa_dialoglari import BirlestirPenceresi, BolPenceresi
+from .yazdir import sayfalari_yazdir
 from .yardim import YardimPenceresi
 
 PDF_FILTRESI = "PDF belgeleri (*.pdf)"
 SON_KULLANILAN_SAYISI = 8
 
 
-class AnaPencere(QMainWindow):
+class SayfaKutusu(QLineEdit):
+    """Araç çubuğundaki sayfa numarası kutusu (QSpinBox'ın düz biçimi Fusion'da boş kalıyor)."""
+
+    valueChanged = Signal(int)
+
     def __init__(self):
+        super().__init__("1")
+        self._en_cok = 1
+        self.setFixedWidth(52)
+        self.setAlignment(Qt.AlignCenter)
+        self.setValidator(QIntValidator(1, 999999, self))
+        self.editingFinished.connect(self._bitti)
+
+    def setMaximum(self, n: int):
+        self._en_cok = max(1, n)
+
+    def setValue(self, v: int):
+        self.setText(str(v))
+
+    def value(self) -> int:
+        return int(self.text() or 1)
+
+    def _bitti(self):
+        v = max(1, min(self.value(), self._en_cok))
+        self.setText(str(v))
+        self.valueChanged.emit(v)
+
+
+class AnaPencere(QMainWindow):
+    def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
         self.belge: Belge | None = None
-        self.ayarlar = QSettings(QSettings.IniFormat, QSettings.UserScope, APP_NAME, APP_NAME)
+        self.ayarlar = (QSettings(ayar_dosyasi, QSettings.IniFormat) if ayar_dosyasi
+                        else QSettings(QSettings.IniFormat, QSettings.UserScope, APP_NAME, APP_NAME))
         self._sonuclar: list = []
         self._sonuc_no = -1
         self.setAcceptDrops(True)
         self.resize(1200, 800)
         self._arayuz_kur()
         self._menuleri_kur()
+        self.gorunumu_yukle()
         self._durumu_guncelle()
 
     # --- kurulum ---
@@ -61,6 +93,8 @@ class AnaPencere(QMainWindow):
 
         self.arac = QToolBar()
         self.arac.setMovable(False)
+        self.arac.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        self.arac.setIconSize(QSize(20, 20))
         dikey.addWidget(self.arac)
 
         self.bul_cubugu = QWidget()
@@ -102,8 +136,13 @@ class AnaPencere(QMainWindow):
         self.goruntuleyici.sayfaDegisti.connect(self._sayfa_degisti)
         self.goruntuleyici.olcekDegisti.connect(lambda o: self.olcek_bilgi.setText(f"%{round(o * 100)}"))
 
-    def _eylem(self, metin, fn, kisayol=None, ipucu=None):
+    def _eylem(self, metin, fn, kisayol=None, ipucu=None, simge=None, isaretli=None):
         e = QAction(metin, self)
+        if simge:
+            e.setIcon(simgeler.simge(simge))
+        if isaretli is not None:
+            e.setCheckable(True)
+            e.setChecked(isaretli)
         if kisayol:
             e.setShortcut(QKeySequence(kisayol))
         if ipucu:
@@ -115,9 +154,10 @@ class AnaPencere(QMainWindow):
     def _menuleri_kur(self):
         mb = self.menuBar()
         # Dosya
-        self.e_ac = self._eylem("Aç…", self.ac_sor, "Ctrl+O")
+        self.e_ac = self._eylem("Aç…", self.ac_sor, "Ctrl+O", simge="ac")
         self.e_kaydet = self._eylem("Kaydet", self.kaydet, "Ctrl+S", "Açık dosyanın üzerine yazar (onay ister)")
-        self.e_farkli = self._eylem("Farklı Kaydet…", self.farkli_kaydet, "Ctrl+Shift+S")
+        self.e_farkli = self._eylem("Farklı Kaydet…", self.farkli_kaydet, "Ctrl+Shift+S", simge="kaydet")
+        self.e_yazdir = self._eylem("Yazdır…", self.yazdir, "Ctrl+P", simge="yazdir")
         self.e_ozellik = self._eylem("Belge Özellikleri…", self.ozellikleri_goster)
         self.e_kapat = self._eylem("Kapat", self.kapat, "Ctrl+W")
         self.e_cik = self._eylem("Çıkış", self.close, "Alt+F4")
@@ -128,6 +168,7 @@ class AnaPencere(QMainWindow):
         for e in (self.e_kaydet, self.e_farkli):
             dosya.addAction(e)
         dosya.addSeparator()
+        dosya.addAction(self.e_yazdir)
         dosya.addAction(self.e_ozellik)
         dosya.addSeparator()
         dosya.addAction(self.e_kapat)
@@ -135,37 +176,60 @@ class AnaPencere(QMainWindow):
         self._son_menusu_doldur()
 
         # Düzen
-        self.e_ara = self._eylem("Ara…", self.ara_ac, "Ctrl+F")
+        self.e_ara = self._eylem("Ara…", self.ara_ac, "Ctrl+F", simge="ara")
         self.e_sonraki = self._eylem("Sonraki Sonuç", lambda: self._sonuca_git(1), "F3")
         self.e_onceki = self._eylem("Önceki Sonuç", lambda: self._sonuca_git(-1), "Shift+F3")
+        self.e_kopyala = self._eylem("Seçili Metni Kopyala", self.kopyala, "Ctrl+C", simge="kopyala")
         duzen = mb.addMenu("&Düzen")
+        duzen.addAction(self.e_kopyala)
+        duzen.addSeparator()
         for e in (self.e_ara, self.e_sonraki, self.e_onceki):
             duzen.addAction(e)
 
         # Görünüm
-        self.e_yakin = self._eylem("Yakınlaştır", lambda: self.goruntuleyici.olcek_ata(self.goruntuleyici.olcek * 1.25), "Ctrl++")
-        self.e_uzak = self._eylem("Uzaklaştır", lambda: self.goruntuleyici.olcek_ata(self.goruntuleyici.olcek / 1.25), "Ctrl+-")
+        self.e_yakin = self._eylem("Yakınlaştır", lambda: self.goruntuleyici.olcek_ata(self.goruntuleyici.olcek * 1.25), "Ctrl++", simge="yakinlastir")
+        self.e_uzak = self._eylem("Uzaklaştır", lambda: self.goruntuleyici.olcek_ata(self.goruntuleyici.olcek / 1.25), "Ctrl+-", simge="uzaklastir")
         self.e_yuzde100 = self._eylem("%100", lambda: self.goruntuleyici.olcek_ata(1.0), "Ctrl+0")
-        self.e_genislik = self._eylem("Genişliğe Sığdır", self.goruntuleyici.genislige_sigdir, "Ctrl+1")
-        self.e_sayfaya = self._eylem("Sayfaya Sığdır", self.goruntuleyici.sayfaya_sigdir, "Ctrl+2")
+        self.e_genislik = self._eylem("Genişliğe Sığdır", self.goruntuleyici.genislige_sigdir, "Ctrl+1", simge="genislik")
+        self.e_sayfaya = self._eylem("Sayfaya Sığdır", self.goruntuleyici.sayfaya_sigdir, "Ctrl+2", simge="sayfa")
         self.e_panel = self._eylem("Sol Paneli Göster/Gizle", lambda: self.paneller.setVisible(not self.paneller.isVisible()), "F4")
         self.e_tam = self._eylem("Tam Ekran", self._tam_ekran, "F11")
+        g = self.goruntuleyici
+        self.e_surekli = self._eylem("Sürekli Kaydırma", self._gorunum_uygula, simge="sureklu", isaretli=g.mod == MOD_SUREKLI)
+        self.e_tek = self._eylem("Tek Sayfa", self._gorunum_uygula, simge="tek", isaretli=g.mod == MOD_TEK)
+        self.e_cift = self._eylem("Çift Sayfa (yan yana)", self._gorunum_uygula, simge="cift", isaretli=g.sutun == 2)
+        mod_grup = QActionGroup(self)
+        for e in (self.e_surekli, self.e_tek):
+            mod_grup.addAction(e)
+        self.e_el = self._eylem("El Aracı", self._arac_uygula, simge="el", isaretli=True)
+        self.e_sec = self._eylem("Metin Seçme Aracı", self._arac_uygula, simge="imlec", isaretli=False)
+        arac_grup = QActionGroup(self)
+        for e in (self.e_el, self.e_sec):
+            arac_grup.addAction(e)
+        self.e_gece = self._eylem("Gece Modu", self._gece_uygula, simge="gece", isaretli=False)
         gorunum = mb.addMenu("&Görünüm")
         for e in (self.e_yakin, self.e_uzak, self.e_yuzde100, self.e_genislik, self.e_sayfaya):
             gorunum.addAction(e)
         gorunum.addSeparator()
+        for e in (self.e_surekli, self.e_tek, self.e_cift):
+            gorunum.addAction(e)
+        gorunum.addSeparator()
+        for e in (self.e_el, self.e_sec):
+            gorunum.addAction(e)
+        gorunum.addSeparator()
+        gorunum.addAction(self.e_gece)
         gorunum.addAction(self.e_panel)
         gorunum.addAction(self.e_tam)
 
         # Sayfa
-        self.e_sil = self._eylem("Sayfaları Sil", self.sayfalari_sil, "Del")
+        self.e_sil = self._eylem("Sayfaları Sil", self.sayfalari_sil, "Del", simge="sil")
         self.e_cikar = self._eylem("Sayfaları Çıkar…", self.sayfalari_cikar)
-        self.e_sol = self._eylem("Sola Döndür", lambda: self.dondur(-90), "Ctrl+[")
-        self.e_sag = self._eylem("Sağa Döndür", lambda: self.dondur(90), "Ctrl+]")
-        self.e_bos = self._eylem("Boş Sayfa Ekle", self.bos_sayfa_ekle)
+        self.e_sol = self._eylem("Sola Döndür", lambda: self.dondur(-90), "Ctrl+[", simge="sola")
+        self.e_sag = self._eylem("Sağa Döndür", lambda: self.dondur(90), "Ctrl+]", simge="saga")
+        self.e_bos = self._eylem("Boş Sayfa Ekle", self.bos_sayfa_ekle, simge="boslu")
         self.e_ekle = self._eylem("PDF Ekle (Sona)…", self.pdf_ekle)
-        self.e_birlestir = self._eylem("Birleştir…", self.birlestir)
-        self.e_bol = self._eylem("Böl…", self.bol)
+        self.e_birlestir = self._eylem("Birleştir…", self.birlestir, simge="birlestir")
+        self.e_bol = self._eylem("Böl…", self.bol, simge="bol")
         sayfa = mb.addMenu("&Sayfa")
         for e in (self.e_sil, self.e_cikar):
             sayfa.addAction(e)
@@ -187,16 +251,17 @@ class AnaPencere(QMainWindow):
         yardim.addAction(self.e_hakkinda)
 
         # Araç çubuğu
-        for e in (self.e_ac, self.e_farkli):
+        for e in (self.e_ac, self.e_farkli, self.e_yazdir):
+            self.arac.addAction(e)
+        self.arac.addSeparator()
+        for e in (self.e_el, self.e_sec):
             self.arac.addAction(e)
         self.arac.addSeparator()
         for e in (self.e_uzak, self.e_yakin, self.e_genislik, self.e_sayfaya):
             self.arac.addAction(e)
         self.arac.addSeparator()
         self.arac.addWidget(QLabel("Sayfa "))
-        self.sayfa_kutu = QSpinBox()
-        self.sayfa_kutu.setMinimum(1)
-        self.sayfa_kutu.setKeyboardTracking(False)
+        self.sayfa_kutu = SayfaKutusu()
         self.sayfa_kutu.valueChanged.connect(lambda v: self.goruntuleyici.git(v - 1))
         self.arac.addWidget(self.sayfa_kutu)
         self.toplam_etiket = QLabel(" / 0")
@@ -204,9 +269,11 @@ class AnaPencere(QMainWindow):
         self.arac.addSeparator()
         for e in (self.e_sol, self.e_sag, self.e_sil):
             self.arac.addAction(e)
-        self.arac.addAction(self.e_ara)
+        self.arac.addSeparator()
+        for e in (self.e_gece, self.e_ara):
+            self.arac.addAction(e)
 
-        self._belge_eylemleri = [self.e_kaydet, self.e_farkli, self.e_ozellik, self.e_kapat, self.e_ara, self.e_sonraki,
+        self._belge_eylemleri = [self.e_yazdir, self.e_kopyala, self.e_kaydet, self.e_farkli, self.e_ozellik, self.e_kapat, self.e_ara, self.e_sonraki,
                                  self.e_onceki, self.e_yakin, self.e_uzak, self.e_yuzde100, self.e_genislik,
                                  self.e_sayfaya, self.e_sil, self.e_cikar, self.e_sol, self.e_sag, self.e_bos,
                                  self.e_ekle, self.e_bol]
@@ -518,12 +585,84 @@ class AnaPencere(QMainWindow):
             self.bul_bilgi.setText("Sonuç yok" if arandi else "")
 
     def keyPressEvent(self, olay):
-        if olay.key() == Qt.Key_Escape and self.bul_cubugu.isVisible():
+        if olay.key() == Qt.Key_Escape and not self.bul_cubugu.isVisible():
+            self.goruntuleyici.secimi_temizle()
+        elif olay.key() == Qt.Key_Escape and self.bul_cubugu.isVisible():
             self.bul_cubugu.hide()
             self.goruntuleyici.vurgulari_ata([])
             self.goruntuleyici.setFocus()
         else:
             super().keyPressEvent(olay)
+
+    # --- görünüm ---
+    def _gorunum_uygula(self, *_):
+        mod = MOD_TEK if self.e_tek.isChecked() else MOD_SUREKLI
+        sutun = 2 if self.e_cift.isChecked() else 1
+        self.goruntuleyici.mod_ata(mod, sutun)
+        self.ayarlar.setValue("gorunum_mod", mod)
+        self.ayarlar.setValue("gorunum_sutun", sutun)
+
+    def _arac_uygula(self, *_):
+        arac = ARAC_SEC if self.e_sec.isChecked() else ARAC_EL
+        self.goruntuleyici.arac_ata(arac)
+        self.ayarlar.setValue("arac", arac)
+
+    def _gece_uygula(self, *_):
+        self.goruntuleyici.gece_ata(self.e_gece.isChecked())
+        self.ayarlar.setValue("gece", self.e_gece.isChecked())
+
+    def gorunumu_yukle(self):
+        """Kayıtlı görünüm ayarlarını (mod, sütun, araç, gece) menüye ve görüntüleyiciye uygular."""
+        a = self.ayarlar
+        (self.e_tek if a.value("gorunum_mod", MOD_SUREKLI) == MOD_TEK else self.e_surekli).setChecked(True)
+        self.e_cift.setChecked(str(a.value("gorunum_sutun", 1)) == "2")
+        (self.e_sec if a.value("arac", ARAC_EL) == ARAC_SEC else self.e_el).setChecked(True)
+        self.e_gece.setChecked(str(a.value("gece", False)).lower() in ("true", "1"))
+        self._gorunum_uygula()
+        self._arac_uygula()
+        self._gece_uygula()
+
+    def kopyala(self):
+        if self.goruntuleyici.kopyala():
+            self.statusBar().showMessage("Seçili metin panoya kopyalandı.", 3000)
+        else:
+            self.statusBar().showMessage("Kopyalanacak seçili metin yok (Metin Seçme Aracı ile seçin).", 4000)
+
+    def yazdir(self):
+        if not self.belge:
+            return
+        yazici = QPrinter(QPrinter.HighResolution)
+        n = self.belge.sayfa_sayisi
+        pencere = QPrintDialog(yazici, self)
+        pencere.setWindowTitle("Yazdır")
+        pencere.setOption(QPrintDialog.PrintPageRange, True)
+        pencere.setOption(QPrintDialog.PrintCurrentPage, True)
+        secili = self.kucuk.secili_sayfalar()
+        pencere.setOption(QPrintDialog.PrintSelection, len(secili) > 1)
+        pencere.setMinMax(1, n)
+        if not pencere.exec():
+            return
+        self.yazici_ile_yazdir(yazici, secili)
+
+    def yazici_ile_yazdir(self, yazici, secili=None):
+        """Yazıcı ayarındaki sayfa aralığına göre yazdırır (pencere ve testler ortak kullanır)."""
+        n = self.belge.sayfa_sayisi
+        aralik = yazici.printRange()
+        if aralik == QPrinter.PageRange:
+            sayfalar = list(range(yazici.fromPage() - 1, yazici.toPage()))
+        elif aralik == QPrinter.CurrentPage:
+            sayfalar = [self.goruntuleyici.gecerli_sayfa]
+        elif aralik == QPrinter.Selection and secili:
+            sayfalar = secili
+        else:
+            sayfalar = list(range(n))
+        try:
+            adet = sayfalari_yazdir(self.belge, yazici, sayfalar)
+        except OSError as h:
+            QMessageBox.warning(self, APP_NAME, str(h))
+            return 0
+        self.statusBar().showMessage(f"{adet} sayfa yazıcıya gönderildi.", 5000)
+        return adet
 
     # --- diğer ---
     def ozellikleri_goster(self):

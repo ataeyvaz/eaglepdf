@@ -49,11 +49,11 @@ QToolButton:pressed {{ background: {PRESSED}; }}
 QToolButton:checked {{ background: {CHECKED}; color: {ACCENT}; }}
 QToolButton:disabled {{ color: #a0a0a0; }}
 
-QLineEdit, QSpinBox, QComboBox {{
+QLineEdit, QComboBox {{
     background: {SURFACE}; border: 1px solid #d1d1d1; border-radius: 4px; padding: 3px 6px;
     selection-background-color: {SELECTION}; selection-color: {TEXT};
 }}
-QLineEdit:focus, QSpinBox:focus, QComboBox:focus {{ border-color: {ACCENT}; }}
+QLineEdit:focus, QComboBox:focus {{ border-color: {ACCENT}; }}
 
 QListWidget, QTreeWidget, QTextBrowser {{ background: {SURFACE}; border: none; selection-background-color: {SELECTION}; }}
 QListWidget::item:selected, QTreeWidget::item:selected {{ background: {CHECKED}; color: {TEXT}; border: 1px solid {ACCENT}; }}

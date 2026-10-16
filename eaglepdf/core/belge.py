@@ -132,6 +132,10 @@ class Belge:
         matris = pymupdf.Matrix(olcek, olcek)
         return self._doc[i].get_pixmap(matrix=matris, alpha=False)
 
+    def kelimeler(self, i: int) -> list[tuple]:
+        """Sayfadaki kelimeler: (x0, y0, x1, y1, metin, blok, satır, sıra) — metin seçme için, içerik sırasıyla."""
+        return [(*k[:4], k[4].replace("\xa0", " "), k[5], k[6], k[7]) for k in self._doc[i].get_text("words")]
+
     def ara(self, aranan: str) -> list[tuple[int, tuple[float, float, float, float]]]:
         """Türkçe büyük/küçük harf duyarsız arama → [(sayfa, (x0, y0, x1, y1)), ...]."""
         aranan = aranan.strip()

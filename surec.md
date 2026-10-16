@@ -10,13 +10,14 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 | Özellik haritası (`docs/ozellikler.md`) | Tüm özellikler listelensin | Ad düzeyi harita + 5 faz önerisi yazıldı; ⚠ işaretliler elle gözlem bekler | ✅ (faz onayı bekliyor) |
 | Çekirdek (`core/belge.py`) | aç, parola, render, Türkçe arama, sayfa sil/döndür/ekle/sırala/çıkar, birleştir, böl, güvenli kayıt | 11 test geçti | ✅ |
 | Uygulama iskeleti (PySide6) | pencere, menü, yardım, hakkında, kırmızı tema | Görüntüleyici (sürekli kaydırma, tembel çizim, yakınlaştırma), küçük resim + yer imi paneli, arama çubuğu, sayfa işlemleri menüsü, birleştir/böl pencereleri, yardım, hakkında; 4 arayüz testi | ✅ |
-| Faz 1 kalanlar | yazdırma, belge özellikleri düzenleme, tek/çift sayfa görünümü, el/seçim aracı, gece teması, sekmeler | — | ⏳ |
+| Faz 1: görünüm ve araçlar | tek/çift/sürekli sayfa, el + metin seçme (kopyala), gece modu, yazdırma (+aralık/seçili), çizgi simgeler | tamamlandı; 20 test geçti | ✅ |
+| Faz 1: belge sekmeleri | çoklu belge | yapılmadı (bkz. Kararlar) | ⏸ |
 
-Testler: `.venv\Scripts\python -m pytest` (15 geçti)
+Testler: `.venv\Scripts\python -m pytest` (20 geçti)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
-1. **Faz 1'i tamamla:** yazdırma (+ toplu yazdırma sonra), tek/çift sayfa ve sürekli/sürekli değil görünümü, el/metin seçme aracı, gece teması, belge sekmeleri, simgeler (Sözcük'teki gibi kodla çizilen), araç çubuğu özelleştirme.
-2. Faz 2: ek açıklama + form (vurgula, çiz, not, form doldur, görsel imza, bağlantı, yer imi ekle/düzenle).
+1. **Faz 2'ye başla:** ek açıklama + form (vurgula, altını çiz/üstünü çiz, serbest çizim, not, metin kutusu, şekil, form doldurma, görsel imza, bağlantı, yer imi ekle/düzenle, ek açıklama listesi).
+2. Toplu yazdırma, belge sekmeleri, belge özellikleri düzenleme, ayarlar penceresi (varsayılan görünüm, dosya ilişkilendirme) Faz 1 artıkları olarak uygun yerde eklenecek.
 3. Türkçe OCR verisi (`tur.traineddata`, Apache-2.0) Faz 5'te temin edilecek.
 4. (İsteğe bağlı) ⚠ işaretli noktaları PDFgear'ı elle açıp gözlemle.
 3. Bağımlılık lisanslarını doğrula (pypdfium2, pypdf/pikepdf, Tesseract).
@@ -39,6 +40,7 @@ Testler: `.venv\Scripts\python -m pytest` (15 geçti)
 - 2026-10-16: Her başarılı aşamadan sonra commit kullanıcıya sorulmadan atılır — kullanıcı izni (genel kuraldaki "yalnızca isterse"nin bu proje için istisnası).
 - 2026-10-16: **Arayüz tamamen Türkçe; OCR'da Türkçe (`tur`) zorunlu** (PDFgear'da yok, ayrıca eklenecek; Ibı/İi/ş/ğ testi) — kullanıcı isteği.
 - 2026-10-16: **Faz sırası onaylandı** (okuyucu/sayfa → ek açıklama/form → düzenleme → dönüştürme/sıkıştırma → OCR/koruma/imza) — kullanıcı. **Yerel çeviri ve sohbet (yapay zekâ) alınmayacak** (ücretsiz uygun model yok) — kullanıcı.
+- 2026-10-16: **Belge sekmeleri ertelendi:** görüntüleyici/panel yapısı tek belgeye göre; sekme için çoklu `Belge` + sekme başına görünüm durumu gerekir. Şimdilik her belge ayrı pencerede (EaglePDF.bat ile yeni örnek). İstenirse Faz 1 artığı olarak yapılır.
 - 2026-10-16: **Arayüz vurgu rengi KIRMIZI** (`#c62828`, `ui/theme.py`); yerleşim Eagle Office düzeniyle aynı (başlık şeridi, menü, araç çubuğu) — kullanıcı isteği. Sözcük/Tabcel'in mavisinden bilerek ayrılır.
 - 2026-10-16: Kayıt davranışı: Kaydet açık dosyanın üzerine yazar ama onay sorar; Farklı Kaydet varsayılan önerilir; her kayıt geçici dosya → yerine koy.
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
@@ -58,6 +60,9 @@ Testler: `.venv\Scripts\python -m pytest` (15 geçti)
 | Kardeş projeler | `Desktop\sozcuk`, `Desktop\tabcel` (arayüz ve yapı referansı) |
 
 ## 7. Bilinen sorunlar ve tuzaklar
+- `QSpinBox` + stil sayfası Fusion'da boş kalıyor (metin alanı 1 px); sayfa kutusu bu yüzden `QLineEdit` tabanlı (`SayfaKutusu`).
+- Bu ortamda uzun `python - <<heredoc` bazen kabukta ayrışmıyor; betikleri dosyaya yazıp çalıştır.
+- Metin seçme kelime tabanlı (PyMuPDF kelime kutuları); sütunlu sayfalarda içerik sırasına göre seçer, görsel sıraya göre değil.
 - Windows'ta açık PDF'in üzerine yazmak için PyMuPDF belgesi kapatılıp yeniden açılır (`Belge.kaydet`); testlenmiş.
 - Bazı yazı tipleri boşluğu sert boşluk (U+00A0) üretir; aramada normalleştirilir.
 - Offscreen Qt testlerinde yazı tipi yok (ekran görüntüsünde kutucuk çıkar); görsel kontrol gerçek platformda yapılır.
