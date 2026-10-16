@@ -13,7 +13,7 @@ Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışı
 Son commit: `ca6efcf` · Testler: henüz yok
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
-1. **Kullanıcıya faz sırasını onaylat** (`docs/ozellikler.md` sonu: 5 faz önerisi). Ayrıca Türkçe OCR verisi (`tur.traineddata`) PDFgear'da yok, ayrıca temin edilecek.
+1. **Kullanıcıya faz sırasını onaylat** (`docs/ozellikler.md` sonu: 5 faz önerisi). Türkçe OCR verisi (`tur.traineddata`) zorunlu, ayrıca temin edilecek.
 2. (İsteğe bağlı) ⚠ işaretli noktaları PDFgear'ı elle açıp gözlemle.
 3. Bağımlılık lisanslarını doğrula (pypdfium2, pypdf/pikepdf, Tesseract).
 4. Uygulama iskeleti: pencere, Sözcük/Tabcel görünümü, Yardım menüsü, Hakkında.
@@ -33,6 +33,7 @@ Son commit: `ca6efcf` · Testler: henüz yok
 - 2026-10-16: Yığın Python 3.11 + PySide6, arayüz Sözcük/Tabcel diliyle (Eagle Office ailesi) — kardeş uygulamalarla tutarlılık, ortak bilgi birikimi.
 - 2026-10-16: **Yardım → Nasıl Kullanılır menüsü** zorunlu — kullanıcı isteği.
 - 2026-10-16: Her başarılı aşamadan sonra commit kullanıcıya sorulmadan atılır — kullanıcı izni (genel kuraldaki "yalnızca isterse"nin bu proje için istisnası).
+- 2026-10-16: **Arayüz tamamen Türkçe; OCR'da Türkçe (`tur`) zorunlu** (PDFgear'da yok, ayrıca eklenecek; Ibı/İi/ş/ğ testi) — kullanıcı isteği.
 - 2026-10-16: **PyMuPDF kullanılacak, proje AGPL-3.0 açık kaynak** (GitHub'a konabilir) — kullanıcı ticaret/satış yapmayacak; izinli lisanslı alternatifler PyMuPDF kadar kapsamlı değil, "tüm özellikler" hedefi için PyMuPDF şart. (Önceki "PyMuPDF yok" kararı iptal.) Syncfusion/SautinSoft gibi ticari bileşenler yine kullanılmaz.
 
 ## 5. Açık sorular / bekleyenler
