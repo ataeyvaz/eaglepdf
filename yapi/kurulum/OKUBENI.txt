@@ -1,0 +1,54 @@
+EAGLE OFFICE 1.2 - KURULUM NOTU
+================================
+
+Eagle Office; Sözcük (kelime işlemci), Tabcel (e-tablo) ve EaglePDF (PDF görüntüleyici/düzenleyici) uygulamalarını tek kurulumda sunar.
+Her şey bilgisayarınızda çalışır; belgeleriniz hiçbir sunucuya gönderilmez.
+
+KURULUM
+-------
+1. Zip dosyasını açın (ilk adımdaki "Windows korumalı" uyarısı için aşağıya bakın).
+2. "EagleOffice-1.2-kurulum.exe" dosyasına çift tıklayın.
+3. Sihirbaz bilgisayarınızı denetler: kurulu olmayan ya da daha eski sürümde olan uygulamalar
+   otomatik seçilir; güncel olanlara DOKUNULMAZ. İsterseniz seçimi değiştirip "İleri" ve "Kur" ile devam edin.
+4. Kurulum bitince Başlat menüsündeki "Eagle Office" klasöründen uygulamaları açabilirsiniz.
+
+"WINDOWS BİLGİSAYARINIZI KORUDU" UYARISI
+----------------------------------------
+Kurulumu çalıştırırken mavi bir "Windows bilgisayarınızı korudu (SmartScreen)" penceresi
+çıkabilir. Bunun nedeni, programın henüz ücretli bir kod imzası taşımamasıdır; dosyada zararlı
+bir şey olduğu anlamına gelmez. Üç yoldan biriyle geçebilirsiniz:
+
+YOL 1 - Uyarı çıktığında (en kolayı)
+   a) "Daha fazla bilgi" yazısına tıklayın.
+   b) Çıkan "Yine de çalıştır" düğmesine tıklayın.
+
+YOL 2 - Zip'i açmadan önce (uyarı hiç çıkmaz)
+   a) İndirdiğiniz zip dosyasına sağ tıklayın, "Özellikler"i seçin.
+   b) Altta "Engellemeyi kaldır" kutusunu işaretleyin, "Tamam"a basın.
+   c) Zip'i ondan sonra açın.
+
+YOL 3 - Zip'i açtıktan sonra
+   a) "EagleOffice-1.2-kurulum.exe" dosyasına sağ tıklayın, "Özellikler"i seçin.
+   b) "Engellemeyi kaldır" kutusunu işaretleyip "Tamam"a basın, sonra kurulumu çalıştırın.
+
+Kurulum sırasında "Bu uygulamanın cihazınızda değişiklik yapmasına izin vermek istiyor
+musunuz?" sorusu da çıkabilir; "Evet" deyin (programlar "Program Files" klasörüne kurulur).
+
+AKILLI KURULUM
+--------------
+Bilgisayarda zaten kurulu bir uygulamanın sürümü paketteki sürümden eski değilse o uygulama yeniden kurulmaz.
+Örneğin yalnızca Sözcük ve Tabcel kuruluysa yalnızca EaglePDF kurulur. Hepsi güncelse kurulum "yapılacak bir şey yok" der.
+Ağ yöneticileri için: /COMPONENTS=sozcuk,tabcel,eaglepdf verilirse bu denetim atlanır, belirtilenler kurulur.
+
+ESKİ SÜRÜM
+----------
+Bilgisayarınızda ayrı kurulmuş eski bir Sözcük ya da Tabcel varsa kurulum, bunları kaldırmak
+isteyip istemediğinizi sorar. Belgeleriniz ve ayarlarınız silinmez.
+
+KALDIRMA
+--------
+Ayarlar > Uygulamalar bölümünden "Eagle Office" seçilip kaldırılabilir.
+
+İLETİŞİM
+--------
+Soru ve önerileriniz için: ataeyvaz@gmail.com
