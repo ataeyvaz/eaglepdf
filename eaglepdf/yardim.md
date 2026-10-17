@@ -74,7 +74,7 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 - **Not:** tıklayıp yazın; sayfada küçük bir not simgesi kalır.
 - **Metin Kutusu:** yerini sürükleyerek belirleyin (ya da tıklayın), metni, yazı boyutunu, kalın/italik seçeneğini girin. Türkçe harflerin hepsi desteklenir.
 - **Renk ve kalınlık:** araç çubuğundaki renk ve çizgi düğmelerinden seçilir; her aracın rengi ayrı hatırlanır.
-- **Seç / Düzenle:** bir açıklamaya tıklayıp seçin. Sürükleyerek taşıyabilir (not, metin kutusu, dikdörtgen, elips), çift tıklayarak metnini düzenleyebilir, renk düğmesiyle rengini değiştirebilir, **Del** ile silebilirsiniz. Sağ tık menüsü de aynı işleri sunar.
+- **Seç / Düzenle:** bir açıklamaya tıklayıp seçin. Sürükleyerek taşıyabilir (not, metin kutusu, dikdörtgen, elips, çizim, çizgi/ok, vurgu, altı/üstü çizili, dalgalı çizgi), çift tıklayarak metnini düzenleyebilir, renk düğmesiyle rengini değiştirebilir, **Del** ile silebilirsiniz. Sağ tık menüsü de aynı işleri sunar.
 - **Açıklamalar paneli** (sol panelde üçüncü sekme): belgedeki tüm açıklamaları listeler; türe ve yazara göre süzer, tıklayınca o yere götürür, birden çoğunu seçip toplu silebilirsiniz.
 - **Yazar adı:** Açıklama → Yazar Adı… ile belirlenir.
 - **Geri Al / Yinele** (Ctrl+Z / Ctrl+Y): sayfa ve açıklama işlemlerinin hepsi için çalışır.
@@ -106,6 +106,7 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 - **Arka Plan…:** düz renk ya da resim; içeriğin altında kalır.
 - **Üstbilgi / Altbilgi…:** sol, orta, sağ için üç ayrı metin. Yer tutucular: `{sayfa}` (sayfa numarası), `{toplam}`, `{tarih}`, `{dosya}`.
 - **Sayfa Numarası Ekle…:** altı konumdan biri; biçimler `{n}`, `Sayfa {n}`, `{n} / {toplam}`… ve başlangıç numarası seçilebilir.
+- **Üstbilgi / Altbilgiyi Kaldır…** ve **Sayfa Numaralarını Kaldır…:** bu uygulamayla eklenenleri seçtiğiniz sayfalardan siler (dosyayı kaydedip kapatsanız bile çalışır; üstbilgi/altbilgi ve numaralar ayrı katmanda durur, biri kalkınca öteki yerinde kalır). Başka programlarla eklenmiş üstbilgi/altbilgilere ve bu özellikten önce eklenmiş olanlara dokunmaz.
 
 Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınabilir.
 

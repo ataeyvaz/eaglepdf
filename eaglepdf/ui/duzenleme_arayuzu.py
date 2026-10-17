@@ -19,7 +19,7 @@ from .dialoglar import MetinPenceresi, png_baytlari
 from .goruntuleyici import ARAC_DUZENLE
 from .sayfa_islem_dialoglari import (
     MUHUR_RENKLERI, ArkaPlanPenceresi, BoyutPenceresi, DuzlestirPenceresi, FiligranPenceresi, KirpPenceresi,
-    FiligranKaldirPenceresi, MuhurPenceresi, SayfaNumarasiPenceresi, UstAltBilgiPenceresi, muhur_resmi,
+    FiligranKaldirPenceresi, KatmanKaldirPenceresi, MuhurPenceresi, SayfaNumarasiPenceresi, UstAltBilgiPenceresi, muhur_resmi,
 )
 
 VARSAYILAN_MUHUR_GENISLIK = 160.0   # pt
@@ -67,6 +67,8 @@ class DuzenlemeArayuzu:
         self.e_arka_plan = self._eylem("Arka Plan…", self.arka_plan_ac, simge="arkaplan")
         self.e_ustalt = self._eylem("Üstbilgi / Altbilgi…", self.ustalt_ac, simge="ustalt")
         self.e_numara = self._eylem("Sayfa Numarası Ekle…", self.numara_ac, simge="numara")
+        self.e_ustalt_kaldir = self._eylem("Üstbilgi / Altbilgiyi Kaldır…", self.ustalt_kaldir_ac)
+        self.e_numara_kaldir = self._eylem("Sayfa Numaralarını Kaldır…", self.numara_kaldir_ac)
 
         # Düzenle menüsü
         self.m_duzenle = QMenu("Dü&zenle", self)
@@ -85,7 +87,7 @@ class DuzenlemeArayuzu:
         # Sayfa menüsüne
         self.m_sayfa.addSeparator()
         for e in (self.e_kirp, self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_filigran_kaldir, self.e_arka_plan,
-                  self.e_ustalt, self.e_numara):
+                  self.e_ustalt, self.e_ustalt_kaldir, self.e_numara, self.e_numara_kaldir):
             self.m_sayfa.addAction(e)
 
         # üçüncü araç çubuğu
@@ -112,7 +114,7 @@ class DuzenlemeArayuzu:
 
         self._belge_eylemleri += [self.e_fil_temizle, self.e_resim, self.e_ozel_muhur, self.e_ara_sil, self.e_duzlestir, self.e_kirp,
                                   self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_filigran_kaldir, self.e_arka_plan,
-                                  self.e_ustalt, self.e_numara, a["metin_duzenle"], a["resim"], a["muhur"], a["redaction"]]
+                                  self.e_ustalt, self.e_numara, self.e_ustalt_kaldir, self.e_numara_kaldir, a["metin_duzenle"], a["resim"], a["muhur"], a["redaction"]]
         self._muhur_dugme = muhur_dugme
         # araç çubuklarını göster/gizle
         self.e_ek_arac = self._eylem("Açıklama Araç Çubuğu", lambda: self._arac_cubugu_ayarla("ek_arac_goster", self.ek_arac, self.e_ek_arac),
@@ -216,6 +218,26 @@ class DuzenlemeArayuzu:
             adet = []
             if self._uygula(lambda: adet.append(self.belge.filigranlari_kaldir(sayfalar))):
                 self.statusBar().showMessage(f"{adet[0]} filigran kaldırıldı.", 6000)
+
+    def _katman_kaldir_ac(self, baslik: str, ne: str, bulunan, kaldir, ileti: str):
+        if not self.belge:
+            return
+        d = KatmanKaldirPenceresi(baslik, ne, *self._dialog_bilgisi(), bulunan(), parent=self)
+        if d.exec():
+            sayfalar = d.degerler()["sayfalar"]
+            adet = []
+            if self._uygula(lambda: adet.append(kaldir(sayfalar))):
+                self.statusBar().showMessage(ileti.format(adet[0]), 6000)
+
+    def ustalt_kaldir_ac(self):
+        if self.belge:
+            self._katman_kaldir_ac("Üstbilgi / Altbilgiyi Kaldır", "Üstbilgi/altbilgi metinleri", self.belge.ustalt_sayfalari,
+                                   self.belge.ustalt_kaldir, "{} üstbilgi/altbilgi metni kaldırıldı.")
+
+    def numara_kaldir_ac(self):
+        if self.belge:
+            self._katman_kaldir_ac("Sayfa Numaralarını Kaldır", "Sayfa numaraları", self.belge.sayfa_numarasi_sayfalari,
+                                   self.belge.sayfa_numarasi_kaldir, "{} sayfa numarası kaldırıldı.")
 
     def arka_plan_ac(self):
         if not self.belge:

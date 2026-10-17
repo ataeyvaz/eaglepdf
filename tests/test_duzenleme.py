@@ -379,3 +379,38 @@ def test_filigran_kaydet_ac_sonra_kaldir_ve_geri_al(tmp_path):
     assert c.geri_al() and c.filigran_sayfalari() == [0, 1]
     c.kaydet(tmp_path / "g.pdf")
     assert Belge.ac(tmp_path / "g.pdf").filigran_sayfalari() == [0, 1]
+
+
+@pytest.mark.parametrize("donus", DONUSLER)
+def test_ustalt_ve_sayfa_numarasi_kaldir_eski_gorunume_doner(tmp_path, donus):
+    b = asimetrik_belge(tmp_path, donus, sayfa=3)
+    once = [sayfa_goruntusu(b, i) for i in range(3)]
+    assert b.ustalt_sayfalari() == [] and b.sayfa_numarasi_sayfalari() == []
+    b.ustalt_bilgi([0, 1, 2], ust=("Rapor", "", "{sayfa}/{toplam}"), alt=("", "{dosya}", ""))
+    b.sayfa_numarasi_ekle([1, 2], "alt-sag", "Sayfa {n}")
+    assert b.ustalt_sayfalari() == [0, 1, 2] and b.sayfa_numarasi_sayfalari() == [1, 2]
+    # ikisi ayrı katmanda: biri kalkınca öteki yerinde kalır
+    assert b.ustalt_kaldir([1]) == 3                       # sol-üst, sağ-üst, orta-alt
+    assert b.ustalt_sayfalari() == [0, 2] and b.sayfa_numarasi_sayfalari() == [1, 2]
+    assert "Rapor" not in b._doc[1].get_text() and "Sayfa 1" in b._doc[1].get_text()
+    assert b.sayfa_numarasi_kaldir([1, 2]) == 2
+    assert sayfa_goruntusu(b, 1) == once[1]                # piksel piksel eski görünüm
+    assert "Rapor" in b._doc[0].get_text()                 # öteki sayfaya dokunulmadı
+    with pytest.raises(BelgeHatasi):
+        b.sayfa_numarasi_kaldir([1])                       # artık yok
+    b.ustalt_kaldir([0, 2])
+    assert sayfa_goruntusu(b, 0) == once[0] and b.ustalt_sayfalari() == []
+    assert b.geri_al() and b.ustalt_sayfalari() == [0, 2]
+
+
+def test_ustalt_kaldir_kayittan_sonra_ve_filigrana_dokunmaz(tmp_path):
+    b = asimetrik_belge(tmp_path, 0, sayfa=2)
+    b.filigran_metin([0, 1], "GİZLİ", 80, aci=30)
+    b.ustalt_bilgi([0, 1], ust=("Başlık", "", ""))
+    b.sayfa_numarasi_ekle([0, 1], "alt-orta", "{n}")
+    b.kaydet(tmp_path / "u.pdf")
+    c = Belge.ac(tmp_path / "u.pdf")
+    assert c.ustalt_kaldir([0, 1]) == 2 and c.sayfa_numarasi_kaldir([0, 1]) == 2
+    assert c.filigran_sayfalari() == [0, 1] and "GİZLİ" in c._doc[0].get_text()
+    with pytest.raises(BelgeHatasi):
+        asimetrik_belge(tmp_path, 0, ad="bos").ustalt_kaldir([0])    # hiç eklenmemiş belge

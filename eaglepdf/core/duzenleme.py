@@ -18,6 +18,8 @@ from .hatalar import BelgeHatasi
 EN_AZ_SAYFA_BOYUTU = 20.0
 EN_COK_SAYFA_BOYUTU = 14400.0
 FILIGRAN_KATMANI = "EaglePDF Filigran"  # filigranlar bu isteğe bağlı içerik katmanına etiketlenir (sonradan kaldırılabilsin)
+USTALT_KATMANI = "EaglePDF Üstbilgi/Altbilgi"  # üstbilgi/altbilgi de kendi katmanında: Sayfa → Üstbilgi/Altbilgiyi Kaldır
+SAYFA_NO_KATMANI = "EaglePDF Sayfa Numarası"
 KONUMLAR = ("ust-sol", "ust-orta", "ust-sag", "alt-sol", "alt-orta", "alt-sag")
 SAYFA_NO_BICIMLERI = ("{n}", "Sayfa {n}", "{n} / {toplam}", "Sayfa {n} / {toplam}", "- {n} -")
 MUHUR_METINLERI = ("ONAYLANDI", "REDDEDİLDİ", "TASLAK", "GİZLİ", "ACİL", "KOPYA", "FİNAL", "İNCELENDİ", "İMZALANDI")
@@ -56,12 +58,13 @@ class DuzenlemeIslemleri:
         return ad
 
     def _yaz(self, p: pymupdf.Page, x: float, taban_y: float, metin: str, boyut: float, renk, kalin=False,
-             italik=False, opaklik: float = 1.0):
-        """Görünen uzayda (x, taban_y) noktasına, sayfa döndürülmüş olsa da dik okunacak biçimde metin yazar."""
+             italik=False, opaklik: float = 1.0, oc: int | None = None):
+        """Görünen uzayda (x, taban_y) noktasına, sayfa döndürülmüş olsa da dik okunacak biçimde metin yazar.
+        `oc`: verilirse metin bu isteğe bağlı içerik katmanına etiketlenir (sonradan kaldırılabilsin)."""
         ad = self._yazi_tipi_ekle(p, kalin, italik)
         nokta = pymupdf.Point(x, taban_y) * p.derotation_matrix
         p.insert_text(nokta, metin, fontname=ad, fontsize=boyut, color=renk_rgb(renk),
-                      rotate=p.rotation, fill_opacity=opaklik, stroke_opacity=opaklik)
+                      rotate=p.rotation, fill_opacity=opaklik, stroke_opacity=opaklik, oc=oc)
 
     @staticmethod
     def _metin_genisligi(metin: str, boyut: float, kalin=False, italik=False) -> float:
@@ -146,11 +149,51 @@ class DuzenlemeIslemleri:
                 kaynak.close()
 
     # --- filigran, arka plan ---
-    def _filigran_katmani(self, olustur: bool = True) -> int | None:
+    def _katman(self, ad: str, olustur: bool = True) -> int | None:
+        """Adı verilen isteğe bağlı içerik katmanının xref'i (yoksa `olustur`'a göre oluşturur ya da None döner)."""
         for xref, bilgi in (self._doc.get_ocgs() or {}).items():
-            if bilgi.get("name") == FILIGRAN_KATMANI:
+            if bilgi.get("name") == ad:
                 return xref
-        return self._doc.add_ocg(FILIGRAN_KATMANI, on=True) if olustur else None
+        return self._doc.add_ocg(ad, on=True) if olustur else None
+
+    def _filigran_katmani(self, olustur: bool = True) -> int | None:
+        return self._katman(FILIGRAN_KATMANI, olustur)
+
+    def _katman_sayfalari(self, ad: str) -> list[int]:
+        """Adı verilen katmana bağlı içerik taşıyan sayfalar (0 tabanlı)."""
+        oc = self._katman(ad, False)
+        if oc is None:
+            return []
+        sonuc = []
+        for i in range(self._doc.page_count):
+            p = self._doc[i]
+            desenler = self._filigran_desenleri(p, oc)
+            if desenler and any(d.search(self._doc.xref_stream(x).decode("latin-1"))
+                                for d in desenler for x in p.get_contents()):
+                sonuc.append(i)
+        return sonuc
+
+    def _katmandan_kaldir(self, ad: str, sayfalar: list[int], yok_iletisi: str) -> int:
+        """Katmana bağlı tüm içerik bloklarını (metin: BDC…EMC, resim: q…cm /ad Do Q) seçilen sayfalardan siler; adedi döndürür."""
+        oc = self._katman(ad, False)
+        if oc is None:
+            raise BelgeHatasi(yok_iletisi)
+        toplam = 0
+        for i in _bos_degil(sayfalar):
+            p = self._sayfa_nesnesi(i)
+            desenler = self._filigran_desenleri(p, oc)
+            for x in p.get_contents():
+                veri = self._doc.xref_stream(x).decode("latin-1")
+                n = 0
+                for d in desenler:
+                    veri, k = d.subn("", veri)
+                    n += k
+                if n:
+                    self._doc.update_stream(x, veri.encode("latin-1"))
+                    toplam += n
+        if not toplam:
+            raise BelgeHatasi(yok_iletisi)
+        return toplam
 
     def _filigran_blok_adlari(self, p: pymupdf.Page, oc: int) -> list[str]:
         """Sayfanın kaynaklarında filigran katmanına bağlı etiket adları (örn. MC0)."""
@@ -184,40 +227,14 @@ class DuzenlemeIslemleri:
 
     def filigran_sayfalari(self) -> list[int]:
         """Filigran içeren sayfalar (0 tabanlı)."""
-        oc = self._filigran_katmani(False)
-        if oc is None:
-            return []
-        sonuc = []
-        for i in range(self._doc.page_count):
-            p = self._doc[i]
-            desenler = self._filigran_desenleri(p, oc)
-            if desenler and any(d.search(self._doc.xref_stream(x).decode("latin-1"))
-                                for d in desenler for x in p.get_contents()):
-                sonuc.append(i)
-        return sonuc
+        return self._katman_sayfalari(FILIGRAN_KATMANI)
 
     @geri_alinabilir
     def filigranlari_kaldir(self, sayfalar: list[int]) -> int:
         """Bu uygulamayla eklenmiş tüm filigranları seçilen sayfalardan siler; silinen filigran sayısını döndürür."""
-        oc = self._filigran_katmani(False)
-        if oc is None:
-            raise BelgeHatasi("Belgede filigran yok.")
-        toplam = 0
-        for i in _bos_degil(sayfalar):
-            p = self._sayfa_nesnesi(i)
-            desenler = self._filigran_desenleri(p, oc)
-            for x in p.get_contents():
-                veri = self._doc.xref_stream(x).decode("latin-1")
-                n = 0
-                for d in desenler:
-                    veri, k = d.subn("", veri)
-                    n += k
-                if n:
-                    self._doc.update_stream(x, veri.encode("latin-1"))
-                    toplam += n
-        if not toplam:
-            raise BelgeHatasi("Seçilen sayfalarda filigran bulunamadı.")
-        return toplam
+        oc = self._katman(FILIGRAN_KATMANI, False)
+        return self._katmandan_kaldir(FILIGRAN_KATMANI, sayfalar,
+                                      "Belgede filigran yok." if oc is None else "Seçilen sayfalarda filigran bulunamadı.")
 
     @geri_alinabilir
     def filigran_metin(self, sayfalar: list[int], metin: str, boyut: float = 60, renk="#808080", aci: float = 45,
@@ -284,6 +301,7 @@ class DuzenlemeIslemleri:
             raise BelgeHatasi("Üstbilgi ya da altbilgi metni girin.")
         dosya = self.yol.name if self.yol else ""
         toplam = self._doc.page_count
+        katman = self._katman(USTALT_KATMANI)
         for i in _bos_degil(sayfalar):
             p = self._sayfa_nesnesi(i)
             r = p.rect
@@ -294,7 +312,7 @@ class DuzenlemeIslemleri:
                     metin = bilgi_metni(sablon, i + 1, toplam, dosya)
                     g = self._metin_genisligi(metin, boyut, kalin)
                     x = {"sol": kenar, "orta": (r.width - g) / 2, "sag": r.width - kenar - g}[konum]
-                    self._yaz(p, x, y, metin, boyut, renk, kalin)
+                    self._yaz(p, x, y, metin, boyut, renk, kalin, oc=katman)
 
     @geri_alinabilir
     def sayfa_numarasi_ekle(self, sayfalar: list[int], konum: str = "alt-orta", bicim: str = "{n}", baslangic: int = 1,
@@ -306,6 +324,7 @@ class DuzenlemeIslemleri:
         sec = _bos_degil(sayfalar)
         toplam = baslangic + len(sec) - 1
         dikey, yatay = konum.split("-")
+        katman = self._katman(SAYFA_NO_KATMANI)
         for sira, i in enumerate(sec):
             p = self._sayfa_nesnesi(i)
             r = p.rect
@@ -313,7 +332,25 @@ class DuzenlemeIslemleri:
             g = self._metin_genisligi(metin, boyut)
             x = {"sol": kenar, "orta": (r.width - g) / 2, "sag": r.width - kenar - g}[yatay]
             y = kenar if dikey == "ust" else r.height - kenar
-            self._yaz(p, x, y, metin, boyut, renk)
+            self._yaz(p, x, y, metin, boyut, renk, oc=katman)
+
+    def ustalt_sayfalari(self) -> list[int]:
+        """Bu uygulamayla eklenmiş üstbilgi/altbilgi içeren sayfalar (0 tabanlı)."""
+        return self._katman_sayfalari(USTALT_KATMANI)
+
+    @geri_alinabilir
+    def ustalt_kaldir(self, sayfalar: list[int]) -> int:
+        """Bu uygulamayla eklenmiş üstbilgi/altbilgi metinlerini seçilen sayfalardan siler; silinen metin sayısını döndürür."""
+        return self._katmandan_kaldir(USTALT_KATMANI, sayfalar, "Seçilen sayfalarda bu uygulamayla eklenmiş üstbilgi/altbilgi yok.")
+
+    def sayfa_numarasi_sayfalari(self) -> list[int]:
+        """Bu uygulamayla eklenmiş sayfa numarası içeren sayfalar (0 tabanlı)."""
+        return self._katman_sayfalari(SAYFA_NO_KATMANI)
+
+    @geri_alinabilir
+    def sayfa_numarasi_kaldir(self, sayfalar: list[int]) -> int:
+        """Bu uygulamayla eklenmiş sayfa numaralarını seçilen sayfalardan siler; silinen numara sayısını döndürür."""
+        return self._katmandan_kaldir(SAYFA_NO_KATMANI, sayfalar, "Seçilen sayfalarda bu uygulamayla eklenmiş sayfa numarası yok.")
 
     # --- kalıcı silme (redaction) ve düzleştirme ---
     @geri_alinabilir

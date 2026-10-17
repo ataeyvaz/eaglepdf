@@ -100,9 +100,37 @@ def test_bul_sil_tasi(b):
     assert b.ek_listele() == []
     nota = b.ek_not(0, (100, 100), "x")
     b.ek_tasi(0, nota, 10, 10)
-    cizim = b.ek_cizim(0, [[(1, 1), (30, 30)]])
+    cokgen = b._doc[0].add_polygon_annot([(10, 10), (60, 10), (30, 50)])   # taşınamayan tür
     with pytest.raises(BelgeHatasi):
-        b.ek_tasi(0, cizim, 5, 5)
+        b.ek_tasi(0, cokgen.xref, 5, 5)
+
+
+def test_cizim_ok_ve_isaret_tasinir_ozellikleri_korunur(b):
+    kel = b.kelimeler(0)
+    satirlar = kelimelerden_satirlar(kel)
+    cizim = b.ek_cizim(0, [[(100, 300), (140, 340), (180, 300)], [(100, 360), (180, 360)]], "#1565c0", 3.0, "Ata")
+    ok = b.ek_sekil(0, "ok", (100, 500), (220, 560), "#2e7d32", 2.0)
+    cizgi = b.ek_sekil(0, "cizgi", (100, 600), (220, 600), "#c62828", 4.0)
+    isaret = b.ek_isaret(0, "vurgu", satirlar, "#ffeb3b", "Ata")
+    once = {e.xref: e for e in b.ek_listele([0])}
+    for eski, dx, dy in ((cizim, 60, 40), (ok, -30, 20), (cizgi, 10, -40), (isaret, 0, 120)):
+        yeni = b.ek_tasi(0, eski, dx, dy)
+        liste = {e.xref: e for e in b.ek_listele([0])}
+        assert yeni in liste and (yeni == eski or eski not in liste)     # eski nesne kalmadı, yenisi var
+        e0, e1 = once[eski], liste[yeni]
+        assert e1.tur == e0.tur and e1.renk == e0.renk and e1.yazar == e0.yazar
+        assert abs((e1.rect[0] - e0.rect[0]) - dx) <= 3 and abs((e1.rect[1] - e0.rect[1]) - dy) <= 3
+    # çizim: kalınlık ve iki ayrı çizgi korunmuş olmalı
+    ink = next(e for e in b.ek_listele([0]) if e.tur == "Ink")
+    sayfa = b._doc[0]   # sayfa nesnesi canlı kalmalı (PyMuPDF zayıf bağ)
+    a = sayfa.load_annot(ink.xref)
+    assert len(a.vertices) == 2 and abs(a.border["width"] - 3.0) < 0.01
+    # ok ucu korunmuş
+    ok_a = next(x for x in sayfa.annots() if x.type[1] == "Line" and x.line_ends[1] != 0)
+    assert ok_a.line_ends[1] == pymupdf.PDF_ANNOT_LE_CLOSED_ARROW
+    # taşınan vurgu eski yerinde değil: eski satırda artık sarı yok
+    assert b.geri_al()                                                    # son taşımayı geri al (vurgu eski yerine)
+    assert any(e.tur == "Highlight" for e in b.ek_listele([0]))
 
 
 def test_geri_al_yinele(b):

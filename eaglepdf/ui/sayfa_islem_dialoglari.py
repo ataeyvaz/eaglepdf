@@ -313,19 +313,26 @@ class FiligranPenceresi(_TemelPencere):
         return {**ortak, "tur": "resim", "png": png, "genislik_orani": self.genislik.value() / 100}
 
 
-class FiligranKaldirPenceresi(_TemelPencere):
-    def __init__(self, sayfa_sayisi, gecerli, secili, filigranli: list[int], parent=None):
-        super().__init__("Filigranı Kaldır", "Kaldır", sayfa_sayisi, gecerli, secili, parent=parent)
-        if filigranli:
-            ozet = ", ".join(str(i + 1) for i in filigranli[:12]) + (" …" if len(filigranli) > 12 else "")
-            self.govde.addWidget(QLabel(f"Filigran bulunan sayfalar ({len(filigranli)}): {ozet}"))
+class KatmanKaldirPenceresi(_TemelPencere):
+    """Bu uygulamayla eklenmiş (kendi katmanında duran) içeriği seçilen sayfalardan kaldırma penceresi."""
+
+    def __init__(self, baslik: str, ne: str, sayfa_sayisi, gecerli, secili, bulunan: list[int], parent=None):
+        super().__init__(baslik, "Kaldır", sayfa_sayisi, gecerli, secili, parent=parent)
+        if bulunan:
+            ozet = ", ".join(str(i + 1) for i in bulunan[:12]) + (" …" if len(bulunan) > 12 else "")
+            self.govde.addWidget(QLabel(f"{ne} bulunan sayfalar ({len(bulunan)}): {ozet}"))
         else:
-            self.govde.addWidget(QLabel("Bu belgede, bu uygulamayla eklenmiş filigran görünmüyor."))
-        self.govde.addWidget(QLabel("Seçilen sayfalardaki tüm filigranlar (metin ve resim) kaldırılır.\n"
-                                    "Başka programlarla eklenmiş filigranlara dokunulmaz."))
+            self.govde.addWidget(QLabel(f"Bu belgede, bu uygulamayla eklenmiş {ne.lower()} görünmüyor."))
+        self.govde.addWidget(QLabel(f"Seçilen sayfalardaki tüm {ne.lower()} kaldırılır.\n"
+                                    "Başka programlarla eklenenlere dokunulmaz."))
 
     def degerler(self) -> dict:
         return {"sayfalar": self.secilen}
+
+
+class FiligranKaldirPenceresi(KatmanKaldirPenceresi):
+    def __init__(self, sayfa_sayisi, gecerli, secili, filigranli: list[int], parent=None):
+        super().__init__("Filigranı Kaldır", "Filigranlar (metin ve resim)", sayfa_sayisi, gecerli, secili, filigranli, parent)
 
 
 class ArkaPlanPenceresi(_TemelPencere):

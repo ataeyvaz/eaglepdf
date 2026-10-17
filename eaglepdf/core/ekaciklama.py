@@ -21,7 +21,9 @@ TUR_ETIKETLERI = {
 }
 ISARET_TURLERI = ("vurgu", "alti", "ustu", "dalga")
 SEKIL_TURLERI = ("cizgi", "ok", "dikdortgen", "elips")
-TASINABILIR = {"Text", "FreeText", "Square", "Circle", "Stamp"}
+TASINABILIR = {"Text", "FreeText", "Square", "Circle", "Stamp", "Ink", "Line", "Highlight", "Underline", "StrikeOut", "Squiggly"}
+# Geometrisi (köşe/çizgi noktaları) doğrudan değiştirilemeyen türler: silinip aynı özelliklerle kaydırılmış olarak yeniden oluşturulur
+YENIDEN_OLUSTURULAN = {"Ink", "Line", "Highlight", "Underline", "StrikeOut", "Squiggly"}
 STIL_ANAHTARI = "EaglePDFStil"  # metin kutusunun kalın/italik bilgisi ("B", "I", "BI")
 KENAR_ANAHTARI = "EaglePDFKenar"  # metin kutusu kenarlık rengi ("r g b", 0–1)
 
@@ -310,9 +312,46 @@ class EkAciklamaIslemleri:
             yeni.set_info(title=bilgi.get("title", ""), content=bilgi.get("content", ""))
             yeni.update()
             return yeni.xref
+        if tur in YENIDEN_OLUSTURULAN:
+            return self._geometrili_tasi(p, a, dx, dy)
         a.set_rect(pymupdf.Rect(r.x0 + dx, r.y0 + dy, r.x1 + dx, r.y1 + dy))
         if tur not in ("FreeText", "Stamp"):
             a.update()
+        return xref
+
+    @staticmethod
+    def _geometrili_tasi(p: pymupdf.Page, a: pymupdf.Annot, dx: float, dy: float) -> int:
+        """Çizim, çizgi/ok ve metin işaretlerini (vurgu, altı/üstü çizili, dalga) kaydırır: köşe noktaları kaydırılarak
+        aynı renk, kalınlık, ok ucu, saydamlık ve not bilgisiyle yeniden oluşturulur; yeni xref döner."""
+        tur = a.type[1]
+        renk, bilgi, kenar, opaklik = a.colors.get("stroke"), a.info, a.border, a.opacity
+
+        def kaydir(nokta):
+            return pymupdf.Point(nokta[0] + dx, nokta[1] + dy)
+
+        noktalar = a.vertices or []
+        uclar = a.line_ends if tur == "Line" else None
+        if tur == "Ink":
+            yeni = p.add_ink_annot([[(n[0] + dx, n[1] + dy) for n in cizgi] for cizgi in noktalar])
+        elif tur == "Line":
+            yeni = p.add_line_annot(kaydir(noktalar[0]), kaydir(noktalar[1]))
+            if uclar:
+                yeni.set_line_ends(*uclar)
+        else:
+            quadlar = [pymupdf.Quad([kaydir(n) for n in noktalar[i:i + 4]]) for i in range(0, len(noktalar), 4)]
+            fn = {"Highlight": p.add_highlight_annot, "Underline": p.add_underline_annot,
+                  "StrikeOut": p.add_strikeout_annot, "Squiggly": p.add_squiggly_annot}[tur]
+            yeni = fn(quads=quadlar)
+        if renk:
+            yeni.set_colors(stroke=renk)
+        if tur in ("Ink", "Line") and kenar:
+            yeni.set_border(width=kenar.get("width", 1), dashes=kenar.get("dashes") or None)
+        if opaklik is not None and 0 <= opaklik < 1:
+            yeni.set_opacity(opaklik)
+        yeni.set_info(title=bilgi.get("title", ""), content=bilgi.get("content", ""))
+        yeni.update()
+        xref = yeni.xref
+        p.delete_annot(a)
         return xref
 
     # --- bağlantılar ---

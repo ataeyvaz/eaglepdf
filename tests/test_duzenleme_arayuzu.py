@@ -391,3 +391,29 @@ def test_filigran_kaldir_arayuzden(pencere, tmp_path, app, monkeypatch):
     pencere.geri_al()
     assert pencere.belge.filigran_sayfalari() == [0, 1, 2]
     assert "Filigranı Kaldır…" in [e.text() for e in pencere.m_sayfa.actions()]
+
+
+def test_ustalt_ve_numara_kaldir_arayuzden(pencere, tmp_path, app, monkeypatch):
+    from eaglepdf.ui.sayfa_islem_dialoglari import KatmanKaldirPenceresi
+    ac(pencere, app, pdf_yap(tmp_path / "k.pdf", 3, "Merhaba dunya"))
+    b = pencere.belge
+    b.ustalt_bilgi([0, 1, 2], ust=("Rapor", "", ""))
+    b.sayfa_numarasi_ekle([0, 1, 2], "alt-orta", "{n}")
+    gosterilen = []
+    orijinal = KatmanKaldirPenceresi.__init__
+
+    def init(self, *a, **k):
+        orijinal(self, *a, **k)
+        gosterilen.append((a[0], a[5]))
+    monkeypatch.setattr(KatmanKaldirPenceresi, "__init__", init)
+    dialog_yama(monkeypatch, KatmanKaldirPenceresi, lambda d: d.aralik.aralik_rb.setChecked(True) or d.aralik.aralik_kutu.setText("1-2"))
+    pencere.ustalt_kaldir_ac()
+    assert gosterilen[-1] == ("Üstbilgi / Altbilgiyi Kaldır", [0, 1, 2]) and b.ustalt_sayfalari() == [2]
+    assert "2 üstbilgi/altbilgi metni kaldırıldı" in pencere.statusBar().currentMessage()
+    assert b.sayfa_numarasi_sayfalari() == [0, 1, 2]       # numaralara dokunulmadı
+    pencere.numara_kaldir_ac()
+    assert gosterilen[-1][0] == "Sayfa Numaralarını Kaldır" and b.sayfa_numarasi_sayfalari() == [2]
+    pencere.geri_al()
+    assert b.sayfa_numarasi_sayfalari() == [0, 1, 2]
+    adlar = [e.text() for e in pencere.m_sayfa.actions()]
+    assert "Üstbilgi / Altbilgiyi Kaldır…" in adlar and "Sayfa Numaralarını Kaldır…" in adlar

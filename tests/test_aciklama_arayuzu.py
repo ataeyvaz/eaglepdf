@@ -284,3 +284,20 @@ def test_imzalar_deposu(tmp_path):
     with pytest.raises(BelgeHatasi):
         imzalar.kaydet(k, imzalar.PNG_IMZASI + b"x" * (6 * 1024 * 1024))
     assert imzalar.listele(tmp_path / "yok") == []
+
+
+def test_ok_secilir_ve_tasininca_secim_yeni_nesnede_kalir(pencere, tmp_path, app):
+    b = ac(pencere, app, pdf_yap(tmp_path / "ok.pdf", 1))
+    g = pencere.goruntuleyici
+    g.aracEylemi.emit("ok", 0, ((100, 300), (200, 300)))
+    pencere._arac_eylemleri["duzenle"].setChecked(True)
+    pencere._arac_uygula()
+    QTest.mouseClick(g._etiketler[0], Qt.LeftButton, pos=QPoint(round(150 * g.olcek), round(300 * g.olcek)))
+    assert g.secili_ek is not None and g.secili_ek.etiket == "Çizgi / ok"
+    once = g.secili_ek.rect
+    g.aracEylemi.emit("tasi", 0, (g.secili_ek.xref, 40, 25))       # xref değişir (yeniden oluşturulur)
+    assert g.secili_ek is not None and g.secili_ek.etiket == "Çizgi / ok"
+    assert abs(g.secili_ek.rect[0] - once[0] - 40) <= 3 and abs(g.secili_ek.rect[1] - once[1] - 25) <= 3
+    assert len(b.ek_listele()) == 1
+    pencere.geri_al()
+    assert abs(b.ek_listele()[0].rect[0] - once[0]) <= 3
