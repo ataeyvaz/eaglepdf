@@ -276,7 +276,7 @@ def test_metin_duzenle_araci(pencere, tmp_path, app, monkeypatch):
     pencere._arac_uygula()
     g = pencere.goruntuleyici
     QTest.mouseClick(g._etiketler[0], Qt.LeftButton, pos=QPoint(round(100 * g.olcek), round(95 * g.olcek)))
-    metin = pencere.belge._doc[0].get_text()
+    metin = pencere.belge._doc[0].get_text().replace("\xa0", " ")   # belgedeki yazı tipiyle yazılan boşluk sert boşluk olarak okunabilir
     assert "Merhaba" not in metin and "Güncel ışık metni" in metin
     # metin olmayan yere tıklamak mesaj gösterir
     QTest.mouseClick(g._etiketler[0], Qt.LeftButton, pos=QPoint(round(400 * g.olcek), round(700 * g.olcek)))

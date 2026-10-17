@@ -6,7 +6,9 @@ nokta (pt) cinsinden ve sol üst köşe başlangıçlıdır. Her değiştirici y
 """
 
 import datetime
+import os
 import re
+import zlib
 
 import pymupdf
 
@@ -20,6 +22,25 @@ EN_COK_SAYFA_BOYUTU = 14400.0
 FILIGRAN_KATMANI = "EaglePDF Filigran"  # filigranlar bu isteğe bağlı içerik katmanına etiketlenir (sonradan kaldırılabilsin)
 USTALT_KATMANI = "EaglePDF Üstbilgi/Altbilgi"  # üstbilgi/altbilgi de kendi katmanında: Sayfa → Üstbilgi/Altbilgiyi Kaldır
 SAYFA_NO_KATMANI = "EaglePDF Sayfa Numarası"
+# Metin düzenlemede orijinal yazı tipini bulmak için: ad (boşluksuz, küçük harf) -> Windows yazı tipi dosyaları (normal, kalın, italik, kalın+italik)
+SISTEM_YAZI_TIPLERI = {
+    "arial": ("arial", "arialbd", "ariali", "arialbi"),
+    "timesnewroman": ("times", "timesbd", "timesi", "timesbi"),
+    "couriernew": ("cour", "courbd", "couri", "courbi"),
+    "calibri": ("calibri", "calibrib", "calibrii", "calibriz"),
+    "cambria": ("cambria", "cambriab", "cambriai", "cambriaz"),
+    "consolas": ("consola", "consolab", "consolai", "consolaz"),
+    "verdana": ("verdana", "verdanab", "verdanai", "verdanaz"),
+    "tahoma": ("tahoma", "tahomabd", None, None),
+    "segoeui": ("segoeui", "segoeuib", "segoeuii", "segoeuiz"),
+    "georgia": ("georgia", "georgiab", "georgiai", "georgiaz"),
+    "trebuchetms": ("trebuc", "trebucbd", "trebucit", "trebucbi"),
+    "comicsansms": ("comic", "comicbd", "comici", "comicz"),
+}
+YAZI_TIPI_TAKMA_ADLARI = {"helvetica": "arial", "arialmt": "arial", "times": "timesnewroman", "timesnewromanps": "timesnewroman",
+                          "timesnewromanpsmt": "timesnewroman", "courier": "couriernew", "couriernewps": "couriernew",
+                          "couriernewpsmt": "couriernew"}
+_STIL_SOZCUKLERI = re.compile(r"(bold|italic|oblique|regular|semibold|light|black|medium|bd|mt|ps)+$")
 KONUMLAR = ("ust-sol", "ust-orta", "ust-sag", "alt-sol", "alt-orta", "alt-sag")
 SAYFA_NO_BICIMLERI = ("{n}", "Sayfa {n}", "{n} / {toplam}", "Sayfa {n} / {toplam}", "- {n} -")
 MUHUR_METINLERI = ("ONAYLANDI", "REDDEDİLDİ", "TASLAK", "GİZLİ", "ACİL", "KOPYA", "FİNAL", "İNCELENDİ", "İMZALANDI")
@@ -438,7 +459,7 @@ class DuzenlemeIslemleri:
 
     # --- metin düzenleme ---
     def metin_blogu(self, sayfa: int, nokta: tuple[float, float]) -> dict | None:
-        """Noktanın altındaki metin bloğu: {rect, metin, boyut, renk, kalin, italik}; yoksa None."""
+        """Noktanın altındaki metin bloğu: {rect, metin, boyut, renk, kalin, italik, yazi_tipi}; yoksa None."""
         p = self._sayfa_nesnesi(sayfa)
         n = pymupdf.Point(nokta)
         for blok in p.get_text("dict")["blocks"]:
@@ -457,39 +478,106 @@ class DuzenlemeIslemleri:
             renk = "#{:06x}".format(ilk["color"] & 0xFFFFFF)
             return {"rect": tuple(blok["bbox"]), "metin": "\n".join(satirlar).replace("\xa0", " "), "boyut": round(ilk["size"], 1),
                     "renk": renk, "kalin": bool(ilk["flags"] & 16) or "bold" in ilk["font"].lower(),
-                    "italik": bool(ilk["flags"] & 2)}
+                    "italik": bool(ilk["flags"] & 2), "yazi_tipi": ilk["font"]}
         return None
+
+    @staticmethod
+    def _yazi_tipi_anahtari(ad: str) -> str:
+        """'ABCDEF+Calibri-BoldItalic' -> 'calibri' (alt küme öneki, stil ekleri ve harf dışı karakterler atılır)."""
+        ad = ad.split("+", 1)[-1].lower()
+        ad = re.sub(r"[^a-z]", "", ad)
+        onceki = None
+        while onceki != ad:
+            onceki, ad = ad, _STIL_SOZCUKLERI.sub("", ad)
+        return YAZI_TIPI_TAKMA_ADLARI.get(ad, ad)
+
+    @staticmethod
+    def _yazi_tipi_isler_mi(metin: str, **kaynak) -> pymupdf.Font | None:
+        """Yazı tipi (fontfile=… ya da fontbuffer=…) metnin her harfini içeriyor mu ve PDF'e yazılınca aynı metin geri okunuyor mu?
+        Evetse `pymupdf.Font` döner (satır genişliği ölçmek için); değilse None. Alt kümeli/özel kodlamalı yazı tiplerini eler."""
+        try:
+            font = pymupdf.Font(**kaynak)
+            harfler = [c for c in metin if not c.isspace()]
+            if not harfler or not all(font.has_glyph(ord(c)) for c in harfler):
+                return None
+            deneme = metin[:300]
+            gecici = pymupdf.open()
+            try:
+                sayfa = gecici.new_page()
+                sayfa.insert_font(fontname="DENEME", **{("fontbuffer" if "fontbuffer" in kaynak else "fontfile"): list(kaynak.values())[0]})
+                sayfa.insert_textbox(pymupdf.Rect(10, 10, 580, 830), deneme, fontname="DENEME", fontsize=10)
+                okunan = "".join(sayfa.get_text().split())
+            finally:
+                gecici.close()
+            return font if okunan == "".join(deneme.split()) else None
+        except Exception:  # noqa: BLE001 - bozuk/okunamayan yazı tipi: yedek yazı tipine düşülür
+            return None
+
+    def _yazi_tipi_sec(self, p: pymupdf.Page, orijinal: dict | None, metin: str, kalin: bool, italik: bool):
+        """Metin düzenlemede kullanılacak yazı tipi: önce belgenin kendi yazı tipi (gömülüyse ve yeni metnin harflerini
+        taşıyorsa), sonra aynı ailenin Windows'taki dosyası, olmazsa Noto Sans. (kaynak adı, Font, açıklama) döner."""
+        if orijinal and orijinal.get("yazi_tipi"):
+            ad = orijinal["yazi_tipi"]
+            ayni_stil = (bool(orijinal.get("kalin")), bool(orijinal.get("italik"))) == (bool(kalin), bool(italik))
+            if ayni_stil:   # stil değiştirilmediyse belgedeki yazı tipinin kendisi (kalın/italik hazır gelir)
+                anahtar = self._yazi_tipi_anahtari(ad)
+                adaylar = sorted(p.get_fonts(full=True), key=lambda t: t[3] != ad)   # tam ad eşleşmesi önce
+                for tup in adaylar:
+                    # metin sözlüğündeki ad ('Calibri') ile yazı tipi listesindeki ad ('ABCDEF+Calibri Regular') biçimce farklı olabilir
+                    if tup[3] != ad and self._yazi_tipi_anahtari(tup[3]) != anahtar:
+                        continue
+                    try:
+                        _, _, _, tampon = self._doc.extract_font(tup[0])
+                    except Exception:  # noqa: BLE001
+                        break
+                    if tampon:
+                        font = self._yazi_tipi_isler_mi(metin, fontbuffer=tampon)
+                        if font:
+                            return f"EPG{zlib.crc32(tampon):08x}", font, ("buf", tampon), f"{ad.split('+', 1)[-1]} (belgedeki yazı tipi)"
+                    break
+            aile = SISTEM_YAZI_TIPLERI.get(self._yazi_tipi_anahtari(ad))
+            if aile and os.name == "nt":
+                ad_dosya = aile[(1 if kalin else 0) + (2 if italik else 0)]
+                dosya = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", (ad_dosya or "yok") + ".ttf")
+                if ad_dosya and os.path.exists(dosya):
+                    font = self._yazi_tipi_isler_mi(metin, fontfile=dosya)
+                    if font:
+                        return f"EPS{zlib.crc32(dosya.encode()):08x}", font, ("dosya", dosya), f"{font.name.split(' Regular')[0]} (Windows yazı tipi)"
+        return yazitipi.kaynak_adi(kalin, italik), yazitipi.font(kalin, italik), ("buf", yazitipi.tampon(kalin, italik)), "Noto Sans (yedek yazı tipi)"
 
     @geri_alinabilir
     def metin_degistir(self, sayfa: int, rect: tuple, yeni_metin: str, boyut: float, renk="#000000",
-                       kalin: bool = False, italik: bool = False):
-        """`rect` içindeki eski metni kalıcı siler, yerine yeni metni (Noto Sans) aynı yere yazar. Orijinal yazı tipi
-        korunamaz; metin sığmazsa boyut küçültülür, yine sığmazsa kutu aşağı uzar."""
+                       kalin: bool = False, italik: bool = False, orijinal: dict | None = None) -> str:
+        """`rect` içindeki eski metni kalıcı siler, yerine yeni metni aynı yere yazar; kullanılan yazı tipinin adını döndürür.
+        `orijinal`: `metin_blogu` çıktısı verilirse orijinal yazı tipi korunmaya çalışılır (belgedeki gömülü yazı tipi ya da aynı
+        ailenin Windows dosyası; yeni metnin harflerini taşımıyorsa Noto Sans'a düşülür). Metin sığmazsa boyut küçültülür,
+        yine sığmazsa kutu aşağı uzar."""
         p = self._sayfa_nesnesi(sayfa)
         if p.rotation:
             raise BelgeHatasi("Döndürülmüş sayfada metin düzenlenemez; önce sayfayı eski konumuna döndürün.")
         if not yeni_metin.strip():
             raise BelgeHatasi("Metin boş olamaz. Silmek için “Kalıcı Sil” kullanın.")
         r = pymupdf.Rect(rect).normalize()
+        ad, font, (tur, kaynak), aciklama = self._yazi_tipi_sec(p, orijinal, yeni_metin, kalin, italik)
         p.add_redact_annot(r, fill=False)
         p.apply_redactions(images=pymupdf.PDF_REDACT_IMAGE_NONE, graphics=pymupdf.PDF_REDACT_LINE_ART_NONE)
-        ad = self._yazi_tipi_ekle(p, kalin, italik)
+        p.insert_font(fontname=ad, **({"fontbuffer": kaynak} if tur == "buf" else {"fontfile": kaynak}))
         kutu = pymupdf.Rect(r)
         b = float(boyut)
         for _ in range(40):
             kalan = p.insert_textbox(kutu, yeni_metin, fontname=ad, fontsize=b, color=renk_rgb(renk), overlay=True) \
-                if self._sigar_mi(kutu, yeni_metin, b, kalin, italik) else -1
+                if self._sigar_mi(kutu, yeni_metin, b, font) else -1
             if kalan >= 0:
-                return
+                return aciklama
             if b > 6:
                 b -= 0.5
             else:
                 kutu = pymupdf.Rect(kutu.x0, kutu.y0, kutu.x1, kutu.y1 + b * 2)
         raise BelgeHatasi("Metin sayfaya sığdırılamadı.")
 
-    def _sigar_mi(self, kutu: pymupdf.Rect, metin: str, boyut: float, kalin: bool, italik: bool) -> bool:
+    @staticmethod
+    def _sigar_mi(kutu: pymupdf.Rect, metin: str, boyut: float, font: pymupdf.Font) -> bool:
         """Metin, kutuya satır kaydırmayla sığar mı (yazmadan önce ölçer)."""
-        font = yazitipi.font(kalin, italik)
         satir_yuk = boyut * 1.2
         genislik = kutu.width
         satir_sayisi = 0

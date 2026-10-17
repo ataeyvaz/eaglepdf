@@ -36,7 +36,7 @@ Planlı geliştirme bitti. Kalanlar üç grupta:
 2. OCR: ~~`tessdata_best` seçeneği, dil verisini uygulama içinden indirme/kurulum~~ ✅ (2026-10-17, OCR → Dil Verisi…); döndürülmüş sayfalar; Word çıktısında taranmış sayfa düzeni.
 3. Dijital imza: kutuyu sürükleyerek yerleştirme, zaman damgası (RFC 3161)/LTV, Windows sertifika deposundan seçme, çizilmiş imza resmini kutuya koyma.
 4. Geri al bütçesini (400 MB) ve sekme sınırını (8) Ayarlar'a taşımak.
-5. Üstbilgi/altbilgi/sayfa numarası için "kaldır"; çizim/ok/vurgu taşıma; metin düzenlemede orijinal yazı tipi.
+5. ~~Üstbilgi/altbilgi/sayfa numarası için "kaldır"; çizim/ok/vurgu taşıma; metin düzenlemede orijinal yazı tipi.~~ ✅ (2026-10-17: kaldır = ayrı OCG katmanları `EaglePDF Üstbilgi/Altbilgi`, `EaglePDF Sayfa Numarası` (bu özellikten önce eklenenler kaldırılamaz); taşıma = geometrili türler silinip kaydırılmış olarak yeniden oluşturulur (xref değişir); yazı tipi = belgedeki → Windows ailesi → Noto, her aday yeni metinle sınanır).
 6. Word/Excel→PDF'te Office/LibreOffice kuruluysa yüksek sadakat; PDFgear'ı elle açıp `docs/ozellikler.md` ⚠ noktalarını gözlemle.
 
 **C. Karar bekleyenler (kullanıcıya sorulur, önceden yapılmaz):**
@@ -139,7 +139,7 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 ## 7. Sonra çözülecek noktalar ve tuzaklar
 - **Word/Excel→PDF** Office kullanmaz; sayfa düzeni (üst/alt bilgi, sütun, metin kutusu, grafik) birebir gelmez. İstenirse Word/LibreOffice kuruluysa onunla yüksek sadakatli dönüşüm eklenebilir.
 - **Taranmış sayfalar:** Word/Excel/PPT/metin dönüşümü ve metin düzenleme/seçme OCR olmadan çalışmaz (uyarı verir) → Faz 5.
-- Metin düzenleme: döndürülmüş sayfada yok; orijinal yazı tipi korunmuyor.
+- Metin düzenleme: döndürülmüş sayfada yok. Orijinal yazı tipi artık korunur (bkz. §5 2026-10-17): belgedeki yazı tipi → Windows'taki aynı aile → Noto Sans.
 - Sayfa boyutu değişince o sayfaların açıklama/form/bağlantıları: açıklama+form sayfaya işlenir, bağlantılar düşer. Düzleştirme tüm belgeyi etkiler (sayfa bazlı değil).
 - Çizim, çizgi/ok ve işaretler (vurgu vb.) taşınamaz (silip yeniden eklenir). Üstbilgi/altbilgi/sayfa numarası için 'kaldır' yok (Geri Al var).
 - Form alanlarında Türkçe değer: PDF'in kendi alan görünümü (Helv) ş/ğ/ı için bozuk olabilir; `NeedAppearances` işaretlenir; uygulama içinde üstteki kutu doğru gösterir. Başka okuyucuda denenmedi.

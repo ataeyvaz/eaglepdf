@@ -420,5 +420,8 @@ class DuzenlemeArayuzu:
         d = MetinPenceresi(self, "Metni Düzenle", blok["metin"], stil=True, boyut=blok["boyut"],
                            kalin=blok["kalin"], italik=blok["italik"])
         if d.exec() and d.metin():
-            self._dene(lambda: self.belge.metin_degistir(sayfa, blok["rect"], d.metin(), d.boyut.value(), blok["renk"],
-                                                         d.kalin.isChecked(), d.italik.isChecked()), [sayfa])
+            kullanilan = []
+            if self._dene(lambda: kullanilan.append(self.belge.metin_degistir(
+                    sayfa, blok["rect"], d.metin(), d.boyut.value(), blok["renk"], d.kalin.isChecked(), d.italik.isChecked(),
+                    orijinal=blok)), [sayfa]):
+                self.statusBar().showMessage(f"Metin değiştirildi · yazı tipi: {kullanilan[0]}", 6000)

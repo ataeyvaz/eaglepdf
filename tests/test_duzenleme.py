@@ -414,3 +414,64 @@ def test_ustalt_kaldir_kayittan_sonra_ve_filigrana_dokunmaz(tmp_path):
     assert c.filigran_sayfalari() == [0, 1] and "GİZLİ" in c._doc[0].get_text()
     with pytest.raises(BelgeHatasi):
         asimetrik_belge(tmp_path, 0, ad="bos").ustalt_kaldir([0])    # hiç eklenmemiş belge
+
+
+def _yazi_tipli_belge(tmp_path, ad: str, dosya: str, gom: bool, metin: str = "Merhaba dunya", stil=None):
+    """Verilen Windows yazı tipiyle yazılmış tek sayfalık belge (gom=True: PDF'e gömülür)."""
+    yol_font = Path(r"C:\Windows\Fonts") / dosya
+    if not yol_font.exists():
+        pytest.skip(f"{dosya} yok")
+    d = pymupdf.open()
+    p = d.new_page()
+    p.insert_font(fontname="F1", fontfile=str(yol_font))
+    p.insert_text((72, 100), metin, fontname="F1", fontsize=14)
+    yol = tmp_path / f"{ad}.pdf"
+    d.save(yol)
+    d.close()
+    return Belge.ac(yol)
+
+
+def _sayfadaki_yazi_tipleri(b: Belge) -> list[str]:
+    return [t[3].split("+", 1)[-1] for t in b._doc[0].get_fonts(full=True)]
+
+
+def test_metin_degistir_belgedeki_yazi_tipini_korur(tmp_path):
+    b = _yazi_tipli_belge(tmp_path, "cal", "calibri.ttf", True)
+    blok = b.metin_blogu(0, (80, 95))
+    assert blok and "calibri" in blok["yazi_tipi"].lower()
+    kullanilan = b.metin_degistir(0, blok["rect"], "Merhaba", blok["boyut"], blok["renk"], blok["kalin"], blok["italik"], orijinal=blok)
+    assert "Calibri" in kullanilan and "belgedeki" in kullanilan
+    assert "Merhaba" in b._doc[0].get_text()
+    # yeni yazılan metin de Calibri ile yazılmış (Noto kullanılmadı)
+    assert not any("Noto" in f for f in _sayfadaki_yazi_tipleri(b))
+
+
+def test_metin_degistir_gomulu_yazi_tipinde_olmayan_harf_icin_ayni_aile_sistem_dosyasi(tmp_path):
+    """Belgede alt küme yok (tam gömülü) ya da harf eksik olsa da aynı ailenin Windows dosyası / yedek devreye girer; metin doğru çıkar."""
+    b = _yazi_tipli_belge(tmp_path, "ar", "arial.ttf", True)
+    blok = b.metin_blogu(0, (80, 95))
+    kullanilan = b.metin_degistir(0, blok["rect"], "Güncel ışık şğüöç", blok["boyut"], blok["renk"], orijinal=blok)
+    assert "Arial" in kullanilan
+    assert "Güncel ışık şğüöç" in b._doc[0].get_text().replace(" ", " ")
+
+
+def test_metin_degistir_bilinmeyen_yazi_tipi_ve_stil_degisince_yedek_noto(tmp_path):
+    b = _yazi_tipli_belge(tmp_path, "cal2", "calibri.ttf", True)
+    blok = b.metin_blogu(0, (80, 95))
+    # orijinal verilmedi (eski davranış)
+    assert b.metin_degistir(0, blok["rect"], "Yeni metin", blok["boyut"], blok["renk"]).startswith("Noto Sans")
+    # yazı tipi adı tanınmayan aile: yedek
+    sahte = {**blok, "yazi_tipi": "XYZ+BilinmeyenYaziTipi"}
+    assert b.metin_degistir(0, blok["rect"], "Bir daha", blok["boyut"], blok["renk"], orijinal=sahte).startswith("Noto Sans")
+    # kullanıcı kalın yaptı: belgedeki normal yazı tipi yerine ailenin kalın Windows dosyası
+    kullanilan = b.metin_degistir(0, blok["rect"], "Kalın", blok["boyut"], blok["renk"], kalin=True, orijinal=blok)
+    assert "Calibri" in kullanilan and "Windows" in kullanilan
+
+
+def test_yazi_tipi_anahtari():
+    from eaglepdf.core.duzenleme import DuzenlemeIslemleri as D
+    assert D._yazi_tipi_anahtari("ABCDEF+Calibri-BoldItalic") == "calibri"
+    assert D._yazi_tipi_anahtari("TimesNewRomanPS-BoldMT") == "timesnewroman"
+    assert D._yazi_tipi_anahtari("Arial-ItalicMT") == "arial"
+    assert D._yazi_tipi_anahtari("Helvetica-Bold") == "arial"
+    assert D._yazi_tipi_anahtari("CourierNewPSMT") == "couriernew"
