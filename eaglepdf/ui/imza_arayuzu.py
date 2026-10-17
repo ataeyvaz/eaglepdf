@@ -208,7 +208,7 @@ class ImzaArayuzu:
 
     def _kopyayi_ac_sor(self, yol: Path, ileti: str):
         self.statusBar().showMessage(ileti, 8000)
-        if QMessageBox.question(self, APP_NAME, f"{ileti}\n\nBu kopyayı şimdi açmak ister misiniz?",
+        if QMessageBox.question(self, APP_NAME, f"{ileti}\n\nDosyayı şimdi açmak ister misiniz?",
                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
             self.ac(str(yol))
 

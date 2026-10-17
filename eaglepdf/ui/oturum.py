@@ -51,3 +51,13 @@ def sekme_ipucu(oturum: BelgeOturumu) -> str:
     if oturum.belge.geri_alinabilir_mi:
         parcalar.append(f"Geri al: {len(oturum.belge._gecmis.geri)} adım, {oturum.belge.geri_al_bayti / (1024 * 1024):.1f} MB")
     return "\n".join(parcalar)
+
+
+def komut_satiri_yollari(argv: list[str]) -> list[str]:
+    """`argv[1:]` içinden açılacak dosya yolları: boşlar ve `-` ile başlayan seçenekler atılır, yinelemeler tek kalır."""
+    gorulen: list[str] = []
+    for a in argv[1:]:
+        a = a.strip().strip('"')
+        if a and not a.startswith("-") and a not in gorulen:
+            gorulen.append(a)
+    return gorulen

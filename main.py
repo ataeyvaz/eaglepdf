@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QApplication
 
 from eaglepdf import APP_NAME, __version__
 from eaglepdf.ui import theme
+from eaglepdf.ui.oturum import komut_satiri_yollari
 from eaglepdf.ui.pencere import AnaPencere
 
 
@@ -14,8 +15,7 @@ def main():
     theme.apply(app)
     pencere = AnaPencere()
     pencere.show()
-    if len(sys.argv) > 1:
-        pencere.ac(sys.argv[1])
+    pencere.ac_coklu(komut_satiri_yollari(sys.argv))   # "Birlikte aç" ya da birden çok dosya: her biri bir sekme
     sys.exit(app.exec())
 
 

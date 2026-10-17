@@ -85,8 +85,9 @@ class DonusumArayuzu:
     def _donusum_sonrasi(self, d: DonusumPenceresi):
         if not d.acilacak:
             return
-        if d.tur.cikti_pdf and d.acilacak[0].lower().endswith(".pdf"):
-            self.ac(d.acilacak[0])
+        pdfler = [y for y in d.acilacak if y.lower().endswith(".pdf")]
+        if d.tur.cikti_pdf and pdfler:
+            self.ac_coklu(pdfler)   # her PDF çıktısı bir sekmede
         else:
             QDesktopServices.openUrl(QUrl.fromLocalFile(str(Path(d.acilacak[0]).parent)))
 

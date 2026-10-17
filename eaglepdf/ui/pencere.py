@@ -353,8 +353,30 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
     # --- belge açma/kapama ---
     def ac_sor(self):
         yollar, _ = QFileDialog.getOpenFileNames(self, "PDF Aç", self.ayarlar.value("son_klasor", ""), PDF_FILTRESI)
+        self.ac_coklu(yollar)
+
+    def ac_coklu(self, yollar) -> int:
+        """Birden çok dosyayı sekmelerde açar. Sınır aşılırsa kalanlar *tek* uyarıyla atlanır. Açılan/öne alınan sayıyı döndürür."""
+        acilan = atlanan = 0
         for yol in yollar:
+            if self._oturum_bul(yol) < 0 and len(self._oturumlar) >= EN_COK_SEKME:
+                atlanan += 1
+                continue
             self.ac(yol)
+            acilan += 1 if self._oturum_bul(yol) >= 0 else 0   # açılamayan (bozuk/yok) sayılmaz
+        if atlanan:
+            QMessageBox.information(self, APP_NAME, f"En çok {EN_COK_SEKME} belge aynı anda açık olabilir; {atlanan} dosya "
+                                                    "açılmadı. Sekme kapatıp yeniden deneyin.")
+        return acilan
+
+    def _acik_dosya_engeli(self, yol, kendisi_serbest: bool = False) -> bool:
+        """`yol` bir sekmede açıksa kullanıcıyı uyarır ve True döner (üzerine yazmak Windows kilidi/bayat belge yaratır).
+        `kendisi_serbest`: etkin sekmenin kendi dosyası engel sayılmaz (Farklı Kaydet aynı yola onayla yazabilir)."""
+        sira = self._oturum_bul(yol)
+        if sira < 0 or (kendisi_serbest and sira == self._etkin):
+            return False
+        QMessageBox.warning(self, APP_NAME, f"“{Path(yol).name}” bir sekmede açık. Önce o sekmeyi kapatın ya da başka bir ad seçin.")
+        return True
 
     def _oturum_bul(self, yol) -> int:
         """`yol` zaten bir sekmede açıksa sırası, değilse -1."""
@@ -695,7 +717,9 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         if not yol:
             return False
         yol = Path(yol if yol.lower().endswith(".pdf") else yol + ".pdf")
-        # Seçilen yer açık dosyaysa kullanıcı Windows'un üzerine-yaz sorusunu zaten onayladı
+        if self._acik_dosya_engeli(yol, kendisi_serbest=True):   # başka sekmede açık dosyanın üzerine yazılmaz
+            return False
+        # Seçilen yer bu belgenin kendisiyse kullanıcı Windows'un üzerine-yaz sorusunu zaten onayladı
         return self._yaz(yol, uzerine_yaz=bool(self.belge.yol and yol.resolve() == self.belge.yol.resolve()))
 
     def _yaz(self, yol: Path, uzerine_yaz: bool) -> bool:
@@ -777,10 +801,8 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             olay.acceptProposedAction()
 
     def dropEvent(self, olay):
-        for u in olay.mimeData().urls():
-            if u.toLocalFile().lower().endswith(".pdf"):
-                self.ac(u.toLocalFile())
-                break
+        self.ac_coklu([u.toLocalFile() for u in olay.mimeData().urls() if u.toLocalFile().lower().endswith(".pdf")])
+        olay.acceptProposedAction()
 
     # --- sayfa işlemleri ---
     def _hedef_sayfalar(self) -> list[int]:
@@ -818,12 +840,15 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             self, "Sayfaları Çıkar", str(Path(self.ayarlar.value("son_klasor", "")) / "cikarilan.pdf"), PDF_FILTRESI)
         if not yol:
             return
+        yol = yol if yol.lower().endswith(".pdf") else yol + ".pdf"
+        if self._acik_dosya_engeli(yol):
+            return
         try:
-            self.belge.sayfalari_kaydet(sayfalar, yol if yol.lower().endswith(".pdf") else yol + ".pdf")
+            self.belge.sayfalari_kaydet(sayfalar, yol)
         except (BelgeHatasi, OSError) as h:
             QMessageBox.warning(self, APP_NAME, str(h))
             return
-        self.statusBar().showMessage(f"{len(sayfalar)} sayfa çıkarıldı: {yol}", 5000)
+        self._kopyayi_ac_sor(Path(yol), f"{len(sayfalar)} sayfa çıkarıldı: {yol}")
 
     def dondur(self, aci: int):
         if self.belge:
@@ -855,12 +880,15 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             self, "Birleştirilmiş PDF", str(Path(self.ayarlar.value("son_klasor", "")) / "birlesik.pdf"), PDF_FILTRESI)
         if not yol:
             return
+        yol = yol if yol.lower().endswith(".pdf") else yol + ".pdf"
+        if self._acik_dosya_engeli(yol):
+            return
         try:
-            n = belge_modulu.birlestir(yollar, yol if yol.lower().endswith(".pdf") else yol + ".pdf")
+            n = belge_modulu.birlestir(yollar, yol)
         except (BelgeHatasi, OSError) as h:
             QMessageBox.warning(self, APP_NAME, str(h))
             return
-        self.statusBar().showMessage(f"{len(yollar)} dosya birleştirildi ({n} sayfa): {yol}", 8000)
+        self._kopyayi_ac_sor(Path(yol), f"{len(yollar)} dosya birleştirildi ({n} sayfa): {yol}")
 
     def bol(self):
         if not self.belge:
