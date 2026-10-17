@@ -41,7 +41,7 @@ Planlı geliştirme bitti. Kalanlar üç grupta:
 
 **C. Karar bekleyenler (kullanıcıya sorulur, önceden yapılmaz):**
 - **Paketleme (kalan):** ✅ taşınabilir onedir klasör + zip ve **kurulum sihirbazı** (Inno Setup, `yapi/kurulum/`, aşağıda §5). Sorulacaklar: (b) **kod imzalama** (ücretli sertifika; yoksa SmartScreen uyarısı çıkar), (c) sürüm numarası/yayın, (d) boyut kırpma (şimdi 347 MB: cv2 111, PySide6 94; yazılım OpenGL/Qt Quick/Qml/Pdf DLL'leri ~40 MB kırpılabilir, risk: DLL bağımlılığı → kendini sınama yakalar), (e) kurulum betiğinin tek kaynağı: aynı betiğin eski kopyası `sozcuk\kurulum\eagle-office.iss` (Sözcük/Tabcel yalnız 1.1 paketi) — **yeni kaynak EaglePDF'deki**; Sözcük projesindeki kopya güncellenmedi, karışmaması için orada not düşmek/emekli etmek kullanıcı kararı.
-- **GitHub'a koymak** (`push` kullanıcı onayıyla), ad kalıcılaştırma (`APP_NAME` geçici sabit), Hakkında/iletişim bilgileri.
+- ✅ **GitHub (2026-10-17):** https://github.com/ataeyvaz/eaglepdf `main` gönderildi. Kalan: ad kalıcılaştırma, Hakkında/iletişim. (eski madde:) **GitHub'a koymak** (`push` kullanıcı onayıyla), ad kalıcılaştırma (`APP_NAME` geçici sabit), Hakkında/iletişim bilgileri.
 
 ## 3. Çalışma sistemi (her adımda)
 1. `surec.md`'yi oku, kaldığın yerden devam et.
