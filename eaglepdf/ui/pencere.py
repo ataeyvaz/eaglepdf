@@ -1,6 +1,7 @@
 """Ana pencere: başlık şeridi, menüler, araç çubuğu, paneller ve görüntüleyici."""
 
 import os
+import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from PySide6.QtGui import QAction, QActionGroup, QIcon, QIntValidator, QKeySeque
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QFileDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QSpinBox, QSplitter,
-    QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit, QApplication, QProgressDialog, QTabBar, QToolButton,
+    QStatusBar, QTabWidget, QToolBar, QVBoxLayout, QWidget, QLineEdit, QApplication, QProgressDialog, QTabBar, QToolButton, QMenu,
 )
 
 from .. import APP_NAME, PAKET_ADI
@@ -21,6 +22,7 @@ from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
+from .sekme_cubugu import SekmeCubugu
 from .oturum import EN_COK_SEKME, BelgeOturumu, sekme_basligi, sekme_ipucu
 from .ozellikler_penceresi import OzelliklerPenceresi
 from .toplu_yazdir import TopluYazdirPenceresi, toplu_yazdir
@@ -129,7 +131,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.arac.setIconSize(QSize(20, 20))
         dikey.addWidget(self.arac)
 
-        self.sekmeler = QTabBar()   # açık belgeler; belge yokken gizli
+        self.sekmeler = SekmeCubugu()   # açık belgeler; belge yokken gizli
         self.sekmeler.setObjectName("belgeSekmeleri")
         self.sekmeler.setTabsClosable(False)   # ✕ düğmesini kendimiz koyarız (temaya uygun, düz simge)
         self.sekmeler.setMovable(True)
@@ -139,7 +141,10 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.sekmeler.setUsesScrollButtons(True)
         self.sekmeler.tabMoved.connect(self._sekme_tasindi)
         self.sekmeler.currentChanged.connect(self._sekme_secildi)
-        self.sekmeler.tabCloseRequested.connect(self._sekme_kapat_istendi)
+        self.sekmeler.tabCloseRequested.connect(self._sekme_kapat)
+        self.sekmeler.ortaTiklandi.connect(self._sekme_kapat)
+        self.sekmeler.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.sekmeler.customContextMenuRequested.connect(self._sekme_sag_tik)
         self.sekmeler.hide()
         dikey.addWidget(self.sekmeler)
 
@@ -208,6 +213,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self.e_ozellik = self._eylem("Belge Özellikleri…", self.ozellikleri_goster)
         self.e_ayarlar = self._eylem("Ayarlar…", self.ayarlar_ac, "Ctrl+,")
         self.e_kapat = self._eylem("Kapat", self.kapat, "Ctrl+W")
+        self.e_tumunu_kapat = self._eylem("Tümünü Kapat", self.tum_sekmeleri_kapat, "Ctrl+Shift+W")
         self.e_cik = self._eylem("Çıkış", self.close, "Alt+F4")
         dosya = mb.addMenu("&Dosya")
         dosya.addAction(self.e_ac)
@@ -222,6 +228,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         dosya.addSeparator()
         dosya.addAction(self.e_ayarlar)
         dosya.addAction(self.e_kapat)
+        dosya.addAction(self.e_tumunu_kapat)
         dosya.addAction(self.e_cik)
         self._son_menusu_doldur()
 
@@ -270,6 +277,13 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         gorunum.addSeparator()
         gorunum.addAction(self.e_gece)
         gorunum.addAction(self.e_panel)
+        gorunum.addSeparator()
+        self.e_sonraki_sekme = self._eylem("Sonraki Sekme", lambda: self.sekme_gez(1))
+        self.e_sonraki_sekme.setShortcuts([QKeySequence("Ctrl+Tab"), QKeySequence("Ctrl+PgDown")])
+        self.e_onceki_sekme = self._eylem("Önceki Sekme", lambda: self.sekme_gez(-1))
+        self.e_onceki_sekme.setShortcuts([QKeySequence("Ctrl+Shift+Tab"), QKeySequence("Ctrl+PgUp")])
+        gorunum.addAction(self.e_sonraki_sekme)
+        gorunum.addAction(self.e_onceki_sekme)
         gorunum.addAction(self.e_tam)
 
         # Sayfa
@@ -324,7 +338,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         for e in (self.e_gece, self.e_ara):
             self.arac.addAction(e)
 
-        self._belge_eylemleri = [self.e_yazdir, self.e_kopyala, self.e_kaydet, self.e_farkli, self.e_ozellik, self.e_kapat, self.e_ara, self.e_sonraki,
+        self._belge_eylemleri = [self.e_yazdir, self.e_kopyala, self.e_kaydet, self.e_farkli, self.e_ozellik, self.e_kapat, self.e_tumunu_kapat, self.e_ara, self.e_sonraki,
                                  self.e_onceki, self.e_yakin, self.e_uzak, self.e_yuzde100, self.e_genislik,
                                  self.e_sayfaya, self.e_sil, self.e_cikar, self.e_sol, self.e_sag, self.e_bos,
                                  self.e_ekle, self.e_bol]
@@ -500,9 +514,70 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._oturumu_sessiz_kapat()
 
     def kapat(self):
-        if self._kapatmaya_izin():
-            self._oturumu_sessiz_kapat()
-            self._durumu_guncelle()
+        self._sekme_kapat(self._etkin)
+
+    def _sekme_kapat(self, sira: int) -> bool:
+        """Sekmeyi (değişmişse kaydetme sorarak) kapatır. False: vazgeçildi, işlem sürüyor ya da sekme yok."""
+        if not 0 <= sira < len(self._oturumlar):
+            return False
+        if self._mesgul:
+            self.statusBar().showMessage("Bir işlem sürüyor; bitince sekmeyi kapatabilirsiniz.", 3000)
+            return False
+        if not self._kapatmaya_izin(sira):
+            return False
+        self._oturumu_sessiz_kapat(sira)
+        self._durumu_guncelle()
+        return True
+
+    def _sira_of(self, oturum: BelgeOturumu) -> int:
+        return next((i for i, o in enumerate(self._oturumlar) if o is oturum), -1)
+
+    def diger_sekmeleri_kapat(self, sira: int):
+        """`sira` dışındaki tüm sekmeleri kapatır (her biri için gerekirse sorar; Vazgeç hepsini durdurur)."""
+        if not 0 <= sira < len(self._oturumlar):
+            return
+        hedef = self._oturumlar[sira]
+        for o in list(self._oturumlar):
+            if o is not hedef and not self._sekme_kapat(self._sira_of(o)):
+                return
+        if self._sira_of(hedef) >= 0:
+            self._etkinlestir(self._sira_of(hedef))
+
+    def tum_sekmeleri_kapat(self):
+        """Tüm sekmeleri sırayla kapatır; birinde Vazgeç denirse orada durur (kapananlar kapalı kalır)."""
+        for o in list(self._oturumlar):
+            if not self._sekme_kapat(self._sira_of(o)):
+                return
+
+    def sekme_gez(self, yon: int):
+        """Sonraki (+1) / önceki (-1) sekmeye döngüsel geçiş."""
+        n = len(self._oturumlar)
+        if n > 1:
+            self._etkinlestir((self._etkin + yon) % n)
+
+    def _sekme_menusu(self, oturum: BelgeOturumu) -> QMenu:
+        menu = QMenu(self)
+        menu.addAction("Kapat", lambda: self._sekme_kapat(self._sira_of(oturum)))
+        diger = menu.addAction("Diğerlerini Kapat", lambda: self.diger_sekmeleri_kapat(self._sira_of(oturum)))
+        diger.setEnabled(len(self._oturumlar) > 1)
+        menu.addAction("Tümünü Kapat", self.tum_sekmeleri_kapat)
+        menu.addSeparator()
+        yol = oturum.belge.yol
+        kopya = menu.addAction("Yolu Kopyala", lambda: QApplication.clipboard().setText(str(yol)))
+        kopya.setEnabled(yol is not None)
+        goster = menu.addAction("Klasörde Göster", lambda: self._klasorde_goster(yol))
+        goster.setEnabled(yol is not None and Path(yol).exists())
+        return menu
+
+    def _sekme_sag_tik(self, nokta):
+        sira = self.sekmeler.tabAt(nokta)
+        if sira >= 0:
+            self._sekme_menusu(self._oturumlar[sira]).exec(self.sekmeler.mapToGlobal(nokta))
+
+    @staticmethod
+    def _klasorde_goster(yol):
+        """Dosyayı Windows Gezgini'nde seçili gösterir."""
+        subprocess.Popen(["explorer", f"/select,{Path(yol)}"])
 
     def _belge_goster(self, sayfa: int):
         """Belge değiştiğinde (açılış, sayfa işlemi) tüm görünümleri tazeler."""
@@ -558,14 +633,11 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._oturumlar.insert(yeni, self._oturumlar.pop(eski))
         self._etkin = self._oturumlar.index(etkin) if etkin else -1
 
-    def _sekme_kapat_istendi(self, i: int):
-        """Sekmenin ✕ düğmesi. (Adım 2d'de birden çok sekme için genelleşir.)"""
-        if i == self._etkin:
-            self.kapat()
-
     def _durumu_guncelle(self):
         self._sekmeleri_tazele()
         var = self.belge is not None
+        for e in (self.e_sonraki_sekme, self.e_onceki_sekme):
+            e.setEnabled(len(self._oturumlar) > 1)
         for e in self._belge_eylemleri:
             e.setEnabled(var)
         for w in (self.sayfa_kutu, self.paneller):
