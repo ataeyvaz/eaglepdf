@@ -7,7 +7,8 @@ python-docx>=1.1    # MIT (pdf2docx ile gelir; Word çıktısını okuma/test)
 openpyxl>=3.1       # MIT: Excel okuma/yazma
 python-pptx>=1.0    # MIT: PowerPoint yazma
 mammoth>=1.8        # BSD-2: Word → HTML (Word'den PDF için)
-numpy>=1.26         # BSD-3: görüntü karşılaştırma
+numpy>=1.26         # BSD-3: görüntü karşılaştırma, filigran (taranmış sayfa)
+opencv-python-headless>=4.8  # Apache-2.0: filigran (taranmış sayfa piksel temizliği); pdf2docx ile de gelir
 Pillow>=10          # HPND: resim biçimleri
 comtypes>=1.4; sys_platform == "win32"   # MIT: tarayıcı (WIA)
 lxml>=5           # BSD-3: XMP üst verisi güncelleme (pyhanko ile de gelir)
