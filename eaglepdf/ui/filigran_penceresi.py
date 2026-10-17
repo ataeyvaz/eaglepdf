@@ -321,7 +321,8 @@ class FiligranPenceresi(QDialog):
         self.agac.blockSignals(False)
         notlar = []
         if sonuc.bilevel_pages:
-            notlar.append(f"{len(sonuc.bilevel_pages)} sayfa 1-bit (siyah-beyaz) tarama: bunların filigranı bu sürümde temizlenemez.")
+            notlar.append(f"{len(sonuc.bilevel_pages)} sayfa 1-bit (siyah-beyaz) tarama: filigranı yalnızca sayfalar arası aynı piksel "
+                          "deseniyle aranır (deneysel); bulunduysa önizlemede kontrol edip kendiniz işaretleyin.")
         if sonuc.scanned_pages:
             notlar.append(f"{len(sonuc.scanned_pages)} taranmış sayfa var; filigran resimden çıkarılıp yeniden yazılır.")
         if not fil_ocr.available():

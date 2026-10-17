@@ -284,7 +284,8 @@ def _ana_pencere(t: Path):
 def _filigran(t: Path):
     """Filigran motoru: tekrar eden metin filigranı bulunur ve silinir; taranmış sayfa çözümleyicisi (OpenCV/numpy) yüklenir."""
     import pymupdf
-    from .core.filigran import cleaner, detector, raster   # raster: cv2 + numpy içe aktarmasını sınar
+    from .core import ofis
+    from .core.filigran import bilevel, cleaner, detector, raster, vector   # raster/bilevel: cv2 + numpy içe aktarmasını sınar
     doc = pymupdf.open()
     for i in range(4):
         p = doc.new_page()
@@ -301,8 +302,9 @@ def _filigran(t: Path):
     cleaner.clean_file(str(kaynak), secili, str(cikti))
     metin = "".join(pg.get_text() for pg in pymupdf.open(str(cikti)))
     assert "GIZLI" not in metin and "Soru 1" in metin, f"temizleme beklenen sonucu vermedi: {metin!r}"
-    assert raster.cv2 is not None
-    return "metin filigranı bulundu ve silindi"
+    assert raster.cv2 is not None and bilevel.cv2 is not None and vector.detect is not None
+    d = ofis.durum()   # kayıt defteri okuması (Office/LibreOffice var mı) hatasız çalışmalı
+    return "metin filigranı bulundu ve silindi" + (f"; Office: {'Word ' if d.word else ''}{'Excel ' if d.excel else ''}{'LibreOffice' if d.libreoffice else ''}".rstrip(": ") if (d.word or d.excel or d.libreoffice) else "; Office yok")
 
 
 KONTROLLER = (

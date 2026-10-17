@@ -82,7 +82,7 @@ class ScanResult:
     findings: list
     metadata: dict = field(default_factory=dict)
     scanned_pages: list = field(default_factory=list)   # taranmış (tek resim) sayfalar
-    bilevel_pages: list = field(default_factory=list)   # 1-bit (siyah-beyaz) taramalar: desteklenmez
+    bilevel_pages: list = field(default_factory=list)   # 1-bit (siyah-beyaz) taramalar: yalnızca ortak piksel deseniyle aranır (deneysel)
 
 
 KIND_LABELS = {
@@ -555,6 +555,26 @@ class Detector:
                              reasons, occs, [], {"kind": "raster"}, {"model": model})
                 self._ocr_raster(doc, rf)
                 findings.append(rf)
+
+        # --- 4c: 1-bit (siyah-beyaz) sayfalar: sayfalar arası ortak piksel deseni (deneysel; otomatik seçilmez)
+        if bilevel:
+            from . import bilevel as bilevel_modulu
+            rb = bilevel_modulu.analyze(doc, bilevel, self.progress, self.cancel)
+            if rb:
+                model, occ = rb
+                occs = [Occurrence(p, bb, f"1-bit sayfa resmi xref {bilevel[p][0]}, ortak desen kapsaması %{cov * 100:.0f}",
+                                   {"xref": bilevel[p][0]}) for p, bb, cov in occ]
+                findings.append(Finding(
+                    new_id("B"), "raster", "1-bit taranmış sayfalarda filigran (ortak piksel deseni, deneysel)", "", 0.5,
+                    [f"{len(bilevel)} sayfa 1-bit (siyah-beyaz) tarama; {len(occs)} sayfada aynı pikseller siyah",
+                     "yöntem: sayfalar arası ortak piksel deseni; tarayıcıdan kayarak gelen sayfalarda çalışmaz",
+                     "deneysel: otomatik seçilmedi, önizlemede ('Temizlenmiş halini göster') kontrol edin",
+                     "silme: ortak desen pikselleri beyaza çevrilir; filigranla çakışan yazı pikselleri küçük kayba uğrayabilir"],
+                    occs, [], {"kind": "raster", "bilevel": True}, {"model": model}))
+
+        # --- 4d: yalnızca vektör çizimden oluşan filigranlar
+        from . import vector
+        findings += vector.detect(doc, findings, new_id, self.progress, self.cancel)
 
         self._ocr_images(doc, [f for f in findings if f.kind == "image"])
 

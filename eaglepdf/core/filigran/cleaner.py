@@ -252,10 +252,12 @@ def clean_document(doc: fitz.Document, src_path: str, findings, pages=None,
 
     # ------------------------------------------------ 3b) taranmış sayfa resimleri
     if raster_targets:
+        from . import bilevel as bilevel_modulu
         from . import raster
         for k, (p, xref, model) in enumerate(raster_targets):
             progress(k, len(raster_targets), f"Sayfa {p + 1}: taranmış resim temizleniyor")
-            if raster.clean_page(doc, doc[p], xref, model):
+            temizle = bilevel_modulu.clean_page if getattr(model, "bilevel", False) else raster.clean_page
+            if temizle(doc, doc[p], xref, model):
                 stats.cleaned_images += 1
                 touched_pages.add(p)
 
