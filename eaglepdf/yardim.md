@@ -1,9 +1,21 @@
 <!-- konu: baslarken | Başlarken -->
 {APP_NAME}, PDF belgelerini bu bilgisayarda görüntülemenizi ve sayfalarını düzenlemenizi sağlar. Hiçbir belge internete gönderilmez.
 
-- **Dosya → Aç** (Ctrl+O) ile bir PDF açın; ya da dosyayı pencereye sürükleyip bırakın.
+- **Dosya → Aç** (Ctrl+O) ile bir ya da birkaç PDF açın; ya da dosyaları pencereye sürükleyip bırakın. Her belge ayrı bir **sekmede** açılır (bkz. *Sekmeler*).
 - Parolalı belgelerde parola sorulur.
 - Orijinal dosyanız korunur: değişiklikleri **Farklı Kaydet** ile yeni bir dosyaya yazarsınız. Açık dosyanın üzerine yazmak için ayrıca onay istenir.
+
+<!-- konu: sekmeler | Sekmeler (Birden Çok Belge) -->
+{APP_NAME} birden çok belgeyi aynı pencerede, sekmelerle açar (en çok 8 belge).
+- **Açma:** Dosya → Aç (birden çok dosya seçilebilir), pencereye sürükle-bırak (birden çok PDF), Son Kullanılanlar, dönüştürme çıktıları. Aynı dosyayı yeniden açarsanız yeni sekme açılmaz, o sekmeye geçilir.
+- **Gezinme:** sekmeye tıklayın; **Ctrl+Tab / Ctrl+Shift+Tab** (ya da Ctrl+PgDn / Ctrl+PgUp) sonraki ve önceki sekmeye geçer (Görünüm menüsünde de var). Sekmeleri sürükleyerek sıralayabilirsiniz.
+- **Her sekme kendi durumunu hatırlar:** sayfa, yakınlaştırma, arama metni ve sonuçları, sol panel sekmesi ve **Geri Al geçmişi**. Yarım kalan resim/mühür yerleştirme, sekme değişince iptal olur.
+- **Sekme başlığı:** dosya adı; başındaki **●** kaydedilmemiş değişiklik demektir, kilit simgesi parolalı belgeyi gösterir. Üzerine gelince tam yol ve Geri Al belleği görünür.
+- **Kapatma:** sekmedeki ✕, orta tuşla tıklama ya da **Ctrl+W**. Sağ tık menüsü: *Kapat, Diğerlerini Kapat, Tümünü Kapat, Yolu Kopyala, Klasörde Göster*. **Dosya → Tümünü Kapat** (Ctrl+Shift+W). Değişmiş belgede kaydetmek isteyip istemediğiniz sorulur; “Vazgeç” işlemi orada durdurur. Pencereyi kapatırken tüm değişmiş sekmeler sırayla sorulur.
+- **Çakışma koruması:** başka bir sekmede açık olan bir dosyanın üzerine *Farklı Kaydet*, *Birleştir* ya da *Sayfaları Çıkar* ile yazılamaz; önce o sekmeyi kapatın ya da başka bir ad seçin. Birleştirme, sayfa çıkarma ve imzalı kopya bitince sonucu açmak isteyip istemediğiniz sorulur.
+- **İşlem sürerken** (OCR, toplu yazdırma) sekme değiştirilemez ve kapatılamaz; bu sırada gelen açma istekleri işlem bitince açılır.
+- **Bellek:** tüm sekmelerin Geri Al geçmişi toplam yaklaşık 400 MB ile sınırlıdır. Sınır aşılınca önce etkin olmayan sekmelerin en eski adımları silinir (belgenin kendisi etkilenmez, o sekmede Geri Al kısalır). 200 MB'dan büyük dosyalarda bilgi verilir.
+- **Tek pencere:** Windows'ta bir PDF'e çift tıklayınca ya da “Birlikte aç” deyince, {APP_NAME} zaten açıksa dosya o pencerede yeni sekme olur. Kapatmak için Ayarlar → *Dosyaları çalışan pencerede sekme olarak aç*. İsterseniz *Açılışta son oturumdaki sekmeleri geri yükle* seçeneğini de açabilirsiniz (varsayılan kapalı; bulunamayan ve parolalı belgeler atlanır).
 
 <!-- konu: goruntuleme | Görüntüleme ve Yakınlaştırma -->
 - **Yakınlaştır / Uzaklaştır:** Ctrl++ / Ctrl+- ya da Ctrl basılıyken fare tekerleği.
@@ -28,7 +40,7 @@ Araç çubuğundaki iki araçtan biri her zaman açıktır:
 
 <!-- konu: ayarlar | Ayarlar -->
 **Dosya → Ayarlar…** (Ctrl+,) tercihlerinizi tek yerden değiştirir; Tamam'a basınca hemen uygulanır.
-- **Genel:** açıklamalarda görünecek yazar adı; belge açılırken yakınlaştırma (sayfa genişliğine sığdır, tam sayfa, %100); sayfa düzeni (sürekli/tek, çift sayfa); gece modu; varsayılan araç (El / Metin seçme); son kullanılanlar listesini temizleme.
+- **Genel:** açıklamalarda görünecek yazar adı; belge açılırken yakınlaştırma (sayfa genişliğine sığdır, tam sayfa, %100); sayfa düzeni (sürekli/tek, çift sayfa); gece modu; varsayılan araç (El / Metin seçme); **dosyaları çalışan pencerede sekme olarak aç** (tek pencere, varsayılan açık); **açılışta son oturumu geri yükle** (varsayılan kapalı); son kullanılanlar listesini temizleme.
 - **Klasörler ve OCR:** dönüştürme çıktı klasörü (boşsa dosyanın yanına yazılır) ve OCR dili.
 - **Dosya İlişkisi:** uygulamayı PDF'lerin sağ tık → “Birlikte aç” listesine ekler/kaldırır (yalnızca sizin kullanıcı hesabınız; yönetici izni gerekmez). Windows varsayılan uygulamayı programdan değiştirmeye izin vermediği için ekledikten sonra “Varsayılan uygulamalar” ekranından “.pdf” için bu uygulamayı siz seçersiniz.
 - Arayüz dili Türkçedir; başka dil seçeneği şimdilik yok.
@@ -121,7 +133,7 @@ Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınab
 - **OCR → Aranabilir PDF Yap…:** taranmış (yalnızca resimden oluşan) sayfalara görünmez bir metin katmanı ekler. Görünüm değişmez; ama arama, metin seçme ve kopyalama çalışır. Sayfa aralığı ve dil seçebilirsiniz (Türkçe + İngilizce önerilir). Metni olan sayfalar atlanır. Sonucu beğenmezseniz **Geri Al** yapın; **İptal** ederseniz belge değişmez. Kaydetmek için Dosya → Farklı Kaydet.
 - **OCR → Bölgeden Metin Çıkar:** sayfada bir alan sürükleyin; alandaki yazı okunur, bir pencerede gösterilir ve panoya kopyalanabilir. Belge değişmez.
 - **Dönüştürme:** taranmış belgeyi Word, Excel, HTML ya da metne dönüştürürken sayfalar otomatik OCR'lanır (özgün dosya değişmez). PowerPoint çıktısında taranmış sayfanın OCR metni **slayt notlarına** konur (resimle çakışmaması için metin kutusu eklenmez). Word çıktısında taranmış sayfaların yalnızca paragrafları gelir; sayfa düzeni korunmaz.
-- **Dil verisi:** OCR için `tur.traineddata` (ve `eng.traineddata`) dosyaları `%APPDATA%\{APP_NAME}	essdata` klasöründe bulunmalıdır; kurulum sırasında konur. Yoksa uygulama sizi bu klasöre yönlendirir. Okuma kalitesi tarama kalitesine bağlıdır (200 dpi ve üzeri, düz, temiz sayfa en iyisidir); büyük/küçük ı–i ve İ–I gibi benzer harfler zaman zaman karışabilir. Döndürülmüş sayfalar şimdilik atlanır.
+- **Dil verisi:** OCR için `tur.traineddata` (ve `eng.traineddata`) dosyaları `%APPDATA%\{APP_NAME}\tessdata` klasöründe bulunmalıdır; kurulum sırasında konur. Yoksa uygulama sizi bu klasöre yönlendirir. Okuma kalitesi tarama kalitesine bağlıdır (200 dpi ve üzeri, düz, temiz sayfa en iyisidir); büyük/küçük ı–i ve İ–I gibi benzer harfler zaman zaman karışabilir. Döndürülmüş sayfalar şimdilik atlanır.
 
 <!-- konu: koruma | Koruma (Parola ve İzinler) -->
 - **Koruma → Parola Ekle…:** belgeyi AES-256 ile korumalı yeni bir dosyaya kaydeder; açık belge ve özgün dosya değişmez. *Açma parolası* belgeyi açarken sorulur. *Sahip parolası* aşağıdaki kısıtlamaları (yazdırma, kopyalama, düzenleme vb.) kaldırmak içindir; boş bırakılırsa açma parolası kullanılır. Yalnızca sahip parolası verirseniz belge herkese açılır ama kısıtlamalar uygulanır. **Parolayı unutursanız belge kurtarılamaz.**
@@ -144,7 +156,11 @@ Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınab
 | Ctrl+O | Aç |
 | Ctrl+Shift+S | Farklı Kaydet |
 | Ctrl+S | Kaydet (açık dosyanın üzerine yazar, onay ister) |
-| Ctrl+W | Kapat |
+| Ctrl+W | Kapat (etkin sekme) |
+| Ctrl+Shift+W | Tümünü Kapat (tüm sekmeler) |
+| Ctrl+Tab, Ctrl+PgDown | Sonraki sekme |
+| Ctrl+Shift+Tab, Ctrl+PgUp | Önceki sekme |
+| Alt+F4 | Çıkış |
 | Ctrl+P | Yazdır |
 | Ctrl+, | Ayarlar |
 | Ctrl+Z, Ctrl+Y | Geri al, yinele |

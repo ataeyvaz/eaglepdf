@@ -1,6 +1,8 @@
 # Belge sekmeleri — tasarım planı (2026-10-17)
 
-Durum: **plan, onay bekliyor** (kod yazılmadı). Karar kaydı: `surec.md` §5. Bu plan, 2026-10-16'daki "belge sekmeleri ertelendi" kararını değiştirir.
+Durum: **uygulandı (2026-10-17; adım 1–7 tamam)**. Karar kaydı: `surec.md` §5. Bu plan, 2026-10-16'daki "belge sekmeleri ertelendi" kararını değiştirdi.
+Onaylanan kararlar: mimari A (tek görüntüleyici + oturum), en çok 8 sekme, tek örnek (adım 6), oturum geri yükleme varsayılan kapalı, aynı dosya ikinci kez açılırsa mevcut sekmeye geçilir.
+Uygulamada plandan farklı olanlar: sayfa+ölçek saklama 2c yerine 2b'de yapıldı; tek örnekte yalnızca `QLocalServer` yetmedi (Windows aynı adlı ikinci sunucuya izin veriyor) → `QLockFile` eklendi; meşgulken gelen açma istekleri kuyruğa alınıyor.
 
 ## 1. Amaç ve kapsam
 Aynı pencerede birden çok PDF'i sekmelerle açmak. Kapsam: sekme çubuğu, belge başına durum, kapatma/kaydetme akışı, bellek bütçesi, açma girişleri (aç, sürükle-bırak, komut satırı, son kullanılanlar). **Kapsam dışı (şimdilik):** sekmeleri pencereler arası sürükleme, yan yana bölünmüş görünüm.

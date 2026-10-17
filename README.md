@@ -12,7 +12,15 @@ python -m venv .venv
 ```
 
 ## Durum
-Faz 1–4 tamam (okuyucu, ek açıklama/form/imza, düzenleme, dönüştürme/sıkıştırma/karşılaştırma); sırada Faz 5 (OCR, koruma, dijital imza). Ayrıntı: `surec.md`, özellik haritası: `docs/ozellikler.md`.
+Tüm fazlar tamam: okuyucu, ek açıklama/form/görsel imza, düzenleme, dönüştürme/sıkıştırma/karşılaştırma, OCR, parola koruma,
+sertifikalı dijital imza (pyHanko), ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (en çok 8 belge, tek pencere,
+isteğe bağlı oturum geri yükleme). Ayrıntı: `surec.md`, özellik haritası: `docs/ozellikler.md`, sekme tasarımı: `docs/sekmeler-plani.md`.
+Uygulama içi kılavuz: **Yardım → Nasıl Kullanılır** (kısayollar dahil).
+
+## OCR dil verisi (yeni kurulumda bir kez)
+OCR motoru PyMuPDF'in içinde gelir; yalnızca dil verisi ayrı konur. `tur.traineddata` ve `eng.traineddata` dosyalarını
+(tessdata_fast, Apache-2.0: https://github.com/tesseract-ocr/tessdata_fast) `%APPDATA%\EaglePDF\tessdata` klasörüne kopyalayın.
+Yoksa uygulama OCR kullanılmak istendiğinde bu klasörü söyler. `tesseract.exe` gerekmez.
 
 ## Lisans
 Proje **GNU AGPL-3.0** (`LICENSE`), açık kaynak ve ticari amaçsız.
@@ -26,7 +34,7 @@ Proje **GNU AGPL-3.0** (`LICENSE`), açık kaynak ve ticari amaçsız.
 | mammoth | Word → HTML (Word'den PDF) | BSD-2-Clause |
 | pyHanko, pyhanko-certvalidator | sertifikalı dijital imza + doğrulama | MIT |
 | cryptography, uharfbuzz, lxml, aiohttp | imza altyapısı | Apache-2.0 / BSD / MIT |
-| Tesseract OCR (PyMuPDF içinde) + tessdata_fast `tur`/`eng` | metin tanıma (OCR); dil verisi `%APPDATA%\<Ad>	essdata` içine konur | Apache-2.0 |
+| Tesseract OCR (PyMuPDF içinde) + tessdata_fast `tur`/`eng` | metin tanıma (OCR); dil verisi `%APPDATA%\<Ad>\tessdata` içine konur | Apache-2.0 |
 | NumPy, Pillow, OpenCV (headless, pdf2docx ile gelir) | Görüntü işleme, resim biçimleri | BSD / HPND / Apache-2.0 |
 | comtypes | Tarayıcıdan sayfa alma (WIA) | MIT |
 | pytest | Test | MIT |
