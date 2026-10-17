@@ -45,16 +45,27 @@ def scanned_image(doc: fitz.Document, page: fitz.Page, visible_chars: int):
         return None
     parea = abs(page.rect)
     best = None
-    for im in page.get_images(full=True):
-        x, bpc = im[0], im[4]
-        try:
-            rects = page.get_image_rects(x)
-        except Exception:
+    imgs = page.get_images(full=True)
+    if not imgs:
+        return None
+    bpcler = {im[0]: im[4] for im in imgs}
+    # get_image_info(xrefs=True) her resmi çözüp yavaşlatır; hızlı yol: boyuta göre tek aday varsa xref'i oradan al
+    infos = page.get_image_info()
+    xrefli = None
+    for info in infos:
+        adaylar = {im[0] for im in imgs if (im[2], im[3]) == (info.get("width"), info.get("height"))}
+        if len(adaylar) == 1:
+            x = next(iter(adaylar))
+        else:
+            if xrefli is None:
+                xrefli = page.get_image_info(xrefs=True)
+            x = next((i.get("xref") for i in xrefli if tuple(i["bbox"]) == tuple(info["bbox"])), None)
+        if x not in bpcler:
             continue
-        for r in rects:
-            cover = abs(r & page.rect) / parea if parea else 0
-            if cover >= SCAN_COVER and (best is None or cover > best[3]):
-                best = (x, fitz.Rect(r), bpc, cover)
+        r = fitz.Rect(info["bbox"])
+        cover = abs(r & page.rect) / parea if parea else 0
+        if cover >= SCAN_COVER and (best is None or cover > best[3]):
+            best = (x, r, bpcler[x], cover)
     return best[:3] if best else None
 
 

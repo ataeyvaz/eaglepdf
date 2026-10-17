@@ -281,6 +281,30 @@ def _ana_pencere(t: Path):
     return "ana pencere açıldı, belge sekmede, boyandı"
 
 
+def _filigran(t: Path):
+    """Filigran motoru: tekrar eden metin filigranı bulunur ve silinir; taranmış sayfa çözümleyicisi (OpenCV/numpy) yüklenir."""
+    import pymupdf
+    from .core.filigran import cleaner, detector, raster   # raster: cv2 + numpy içe aktarmasını sınar
+    doc = pymupdf.open()
+    for i in range(4):
+        p = doc.new_page()
+        p.insert_text((50, 100), f"Soru {i + 1}: ucgenin ic acilari", fontsize=12)
+        p.insert_text((120, 600), "GIZLI www.ornekyayin.com", fontsize=40, morph=(pymupdf.Point(120, 600), pymupdf.Matrix(45)),
+                      fill_opacity=0.25, color=(0.5, 0.5, 0.5))
+    kaynak = t / "filigranli.pdf"
+    doc.save(kaynak)
+    doc.close()
+    sonuc = detector.scan(str(kaynak), ocr=False)
+    secili = [f for f in sonuc.findings if f.selected]
+    assert secili, "filigran bulunamadı"
+    cikti = t / "filigransiz.pdf"
+    cleaner.clean_file(str(kaynak), secili, str(cikti))
+    metin = "".join(pg.get_text() for pg in pymupdf.open(str(cikti)))
+    assert "GIZLI" not in metin and "Soru 1" in metin, f"temizleme beklenen sonucu vermedi: {metin!r}"
+    assert raster.cv2 is not None
+    return "metin filigranı bulundu ve silindi"
+
+
 KONTROLLER = (
     ("Yardım ve logo (veri dosyaları)", _yardim_ve_logo),
     ("Simgeler (QtSvg) ve tema", _simgeler_ve_tema),
@@ -292,6 +316,7 @@ KONTROLLER = (
     ("XMP (lxml)", _xmp),
     ("OCR (Tesseract, dil verisi varsa)", _ocr),
     ("Resim biçimleri ve resimden OCR (Pillow)", _resim_ocr),
+    ("Filigran temizleme (OpenCV, numpy)", _filigran),
     ("Yazdırma (QtPrintSupport)", _yazdirma),
     ("Tek örnek (QtNetwork, QLockFile)", _tek_ornek_soket),
     ("Birlikte aç komutu", _iliskilendirme_komutu),
