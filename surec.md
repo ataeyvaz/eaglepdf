@@ -137,6 +137,8 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 
 - 2026-10-17: **Eagle Office deposu açıldı ve kurulum paketi oraya taşındı:** https://github.com/ataeyvaz/eagle-office — `kurulum/` (eagle-office.iss, derle.py, gorsel, OKUBENI.txt), `tests/test_kurulum.py` (6 senaryo ✅ yeni konumda geçti), `sozcuk/`, `tabcel/`, `eaglepdf/` **git alt modülleri** (kullanıcı: 'üç uygulamayı bu repoya bağla'). `derle.py` uygulamaları önce alt modülde, yoksa masaüstündeki kardeş klasörde arar (geliştirme düzeni değişmedi: Desktop\sozcuk, \tabcel, \EaglePDF). EaglePDF'teki `yapi/kurulum/` ve `tests/test_kurulum.py` kaldırıldı (tek kaynak). Kurulum paketi sürümleri GitHub Releases'e konur, depoya değil. Alt modül güncellemek: `git submodule update --remote` + commit. Sözcük'ün `sesler/ata.onnx` ses modeli GitHub'da KALIR (kullanıcı kararı, 2026-10-17). Eagle Office deposu lisansı: AGPL-3.0 (2026-10-17, LICENSE eklendi).
 
+- 2026-10-17: **Lisanslar (kullanıcı: 'paralı satmayacağım, koda göre seç'):** Sözcük, Tabcel, Eagle Office, EaglePDF hepsi **AGPL-3.0** (EaglePDF PyMuPDF yüzünden zorunlu; Sözcük/Tabcel bağımlılıkları uyumlu olduğundan ailede tek lisans). Sözcük'ün ses modeli (`sesler/ata.onnx`) ayrı **CC BY-NC-SA 4.0**. Yalnızca LICENSE + README eklendi; uygulamaların koduna/paketlemesine dokunulmadı. Sonra çözülecek: kurulum paketine Sözcük/Tabcel LICENSE dosyaları, Hakkında'ya lisans satırı.
+
 ## 6. Açık sorular / bekleyenler
 - Dil verisi yeni kurulumda elle konmalı (`%APPDATA%\EaglePDF\tessdata`); ileride uygulama içinden indirme/kurulum sihirbazı düşünülebilir.
 - Tarayıcıdan PDF gerçek cihazla denenmedi (kullanıcıda tarayıcı varsa denenip geri bildirim alınmalı).
