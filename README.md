@@ -3,6 +3,16 @@
 Sade, Türkçe, yerel çalışan PDF masaüstü uygulaması (Eagle Office ailesi). Belgeler bilgisayardan dışarı çıkmaz.
 Kullanıcıya görünen ad geçicidir: `eaglepdf/__init__.py` içindeki `APP_NAME`.
 
+## Eagle Office ailesi
+
+Üç uygulama aynı görünüm diline sahiptir, hepsi bilgisayarınızda çalışır (belgeleriniz hiçbir sunucuya gönderilmez) ve tek kurulum paketiyle de kurulabilir:
+
+- **[Sözcük](https://github.com/ataeyvaz/sozcuk)** — Türkçe kelime işlemci
+- **[Tabcel](https://github.com/ataeyvaz/tabcel)** — Türkçe hesap tablosu
+- **[EaglePDF](https://github.com/ataeyvaz/eaglepdf)** — Türkçe PDF görüntüleyici ve düzenleyici ← bu depo
+
+Kurulum paketi, kurulu uygulamaların sürümünü denetler: güncel olanlara dokunmaz, yalnızca eksik ya da eski olanları kurar.
+
 ## Çalıştırma
 ```
 python -m venv .venv
