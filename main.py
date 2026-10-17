@@ -15,6 +15,10 @@ def _dogru_mu(deger) -> bool:
 
 
 def main():
+    from eaglepdf.oz_sinama import komut_satirindan
+    kod = komut_satirindan(sys.argv)   # --oz-sinama: kritik yolları sınar, rapor yazar, çıkar (paketleme doğrulaması)
+    if kod is not None:
+        sys.exit(kod)
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
     app.setApplicationVersion(__version__)

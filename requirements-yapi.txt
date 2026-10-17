@@ -1,0 +1,3 @@
+# Yalnızca paketleme (derleme) için; uygulama çalışırken gerekmez ve pakete girmez.
+-r requirements.txt
+pyinstaller>=6.10   # GPL-2.0+ (özel istisna: ürettiği uygulamanın lisansını kısıtlamaz); derleme aracı

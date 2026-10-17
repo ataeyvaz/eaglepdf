@@ -39,3 +39,15 @@ def test_baska_kayitlara_dokunmaz():
     il.kaldir(TEST_TABAN)
     with winreg.OpenKey(winreg.HKEY_CURRENT_USER, rf"{TEST_TABAN}\.pdf\OpenWithProgids") as k:
         assert winreg.QueryValueEx(k, "Baska.PDF")
+
+
+def test_paketlenmis_uygulamada_komut_kendi_exesi(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(sys, "executable", r"C:\Program Files\EaglePDF\EaglePDF.exe")
+    assert il.baslatici_komutu() == r'"C:\Program Files\EaglePDF\EaglePDF.exe" "%1"'   # main.py aranmaz
+
+
+def test_gelistirme_ortaminda_komut_main_py_gosterir(monkeypatch):
+    monkeypatch.delattr(sys, "frozen", raising=False)
+    k = il.baslatici_komutu()
+    assert k.endswith(' "%1"') and "main.py" in k

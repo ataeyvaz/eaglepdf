@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **399 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
+Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **417 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -15,6 +15,7 @@ Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellik
 | 5 OCR / koruma / dijital imza | **Koruma ✅** (Koruma menüsü: parola ekle AES-256 + izinler, parolayı kaldır, belge izinleri; çıktı hep yeni dosya). **OCR ✅** (OCR menüsü: aranabilir PDF yap, bölgeden metin çıkar; taranmış belgede Word/Excel/HTML/metin dönüşümü otomatik OCR). **Dijital imza ✅** (Koruma menüsü: sertifika oluştur, dijital imzala (görünür/görünmez, art arda), boş imza alanı, imzaları doğrula; imzalı belge kaydı uyarır) | ✅ |
 | Faz 1 artıkları | **Hepsi ✅:** ayarlar penceresi, belge özellikleri düzenleme, toplu yazdırma, belge sekmeleri | ✅ |
 | Sekmeler | Aynı pencerede en çok 8 belge; her sekme kendi sayfa/ölçek/arama/panel/geri al durumunu saklar; ✕/orta tık/sağ tık menüsü; Ctrl+Tab gezinme; çoklu açma (sürükle-bırak, komut satırı); açık dosyayı ezmeme; genel geri al bellek bütçesi (400 MB); tek pencere (çift tık → çalışan pencerede sekme, `QLockFile`+`QLocalServer`); isteğe bağlı oturum geri yükleme | ✅ |
+| Paketleme | PyInstaller **onedir** (`yapi/paketle.py` → `dist\EaglePDF\EaglePDF.exe`, taşınabilir zip + AGPL kaynak zip); paketlenmiş exe'de **kendini sınama** (`--oz-sinama`, 15 kontrol) geçmeden paket kabul edilmez; lisans dosyası otomatik; simge `yapi/eaglepdf.ico` | ✅ (kurulum sihirbazı/kod imzalama: karar bekliyor, §2-C) |
 
 ## 2. Sıradaki işler (güncel, 2026-10-17)
 Planlı geliştirme bitti. Kalanlar üç grupta:
@@ -34,7 +35,7 @@ Planlı geliştirme bitti. Kalanlar üç grupta:
 6. Word/Excel→PDF'te Office/LibreOffice kuruluysa yüksek sadakat; PDFgear'ı elle açıp `docs/ozellikler.md` ⚠ noktalarını gözlemle.
 
 **C. Karar bekleyenler (kullanıcıya sorulur, önceden yapılmaz):**
-- **Paketleme/dağıtım:** PyInstaller onedir (PySide6 LGPL gereği) + kurulum paketi, sürüm numarası, `EaglePDF.bat` yerine kısayol.
+- **Paketleme (kalan):** ✅ taşınabilir onedir klasör + zip yapıldı (2026-10-17). Sorulacaklar: (a) **kurulum sihirbazı** (Inno Setup: Başlat menüsü/masaüstü kısayolu, .pdf 'Birlikte aç' kaydı, kaldırıcı; `winget install JRSoftware.InnoSetup` gerekir → onay), (b) **kod imzalama** (ücretli sertifika; yoksa SmartScreen uyarısı çıkar), (c) sürüm numarası/yayın, (d) boyut kırpma (şimdi 347 MB: cv2 111, PySide6 94; yazılım OpenGL/Qt Quick/Qml/Pdf DLL'leri ~40 MB kırpılabilir, risk: DLL bağımlılığı → kendini sınama yakalar).
 - **GitHub'a koymak** (`push` kullanıcı onayıyla), ad kalıcılaştırma (`APP_NAME` geçici sabit), Hakkında/iletişim bilgileri.
 
 ## 3. Çalışma sistemi (her adımda)
@@ -51,6 +52,9 @@ main.py, EaglePDF.bat, requirements.txt, README.md, LICENSE (AGPL-3.0)
 eaglepdf/__init__.py     APP_NAME (geçici ad, tek yer), PAKET_ADI, sürüm
 eaglepdf/metin_tr.py     Türkçe büyük/küçük harf (str.lower/upper YASAK; testlerde bile bunu kullan)
 eaglepdf/yardim.md       Nasıl Kullanılır (konu ayracı: <!-- konu: kimlik | Başlık -->, {APP_NAME} yer tutucu)
+eaglepdf/oz_sinama.py      kendini sınama (15 kontrol; `main.py --oz-sinama[=rapor.txt]`; paketlenmiş exe'de de çalışır)
+yapi/                    paketleme: EaglePDF.spec (onedir), paketle.py (derle+doğrula+zip), lisanslari_topla.py, ikon_uret.py, eaglepdf.ico
+requirements-yapi.txt    yalnızca derleme (PyInstaller)
 eaglepdf/core/           Qt'siz
   belge.py               Belge sınıfı (açma, render, arama, sayfa işlemleri, kayıt); karışımlar: EkAciklamaIslemleri + DuzenlemeIslemleri
   ekaciklama.py          ek açıklama, bağlantı, yer imi, form, imza yerleştirme
@@ -73,6 +77,7 @@ eaglepdf/ui/             PySide6
   donusum_arayuzu.py     Faz 4 (Dönüştür menüsü, tarayıcı akışı)
   koruma_arayuzu.py      Faz 5 (Koruma menüsü, ParolaEkleDialog)
   toplu_yazdir.py        toplu yazdırma: toplu_yazdir() (Qt yazıcı, hata yalıtımı) + TopluYazdirPenceresi
+  ocr_veri_penceresi.py  OCR Dil Verisi penceresi (indir/dosyadan ekle/sil; indirme QThread'de)
   ozellikler_penceresi.py Belge Özellikleri (düzenlenebilir 4 alan + salt okunur bilgi + temizle); çekirdek: Belge.ozellikleri_ata/temizle/pdf_tarihi
   ayarlar_penceresi.py   Ayarlar (Genel / Klasörler ve OCR / Dosya İlişkisi); QSettings'e yazar, ana pencere `ayarlari_uygula`
   imza_arayuzu.py        Faz 5 (Koruma menüsüne dijital imza eylemleri, kayıt uyarısı `_imzali_kayit_onayi`)
@@ -107,6 +112,7 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 - 2026-10-16: Dönüştürme bağımlılıkları (hepsi izin verici lisans): pdf2docx (MIT), python-docx (MIT), openpyxl (MIT), python-pptx (MIT), mammoth (BSD-2), numpy (BSD-3), Pillow (HPND), comtypes (MIT, tarayıcı). Word/Excel→PDF için Office gerekmez (mammoth/openpyxl → HTML → PyMuPDF Story).
 - 2026-10-16: Kullanıcı "sınırlar" ifadesinden rahatsız oldu → "sonra çözeceğimiz noktalar" dili kullanılır.
 - 2026-10-17: **OCR dil verisi uygulama içinden indirilebilir** (kullanıcı 'OCR dil verisi kurulumuyla başla' dedi; B listesinde 'dil verisini uygulama içinden indirme' vardı). Bu, uygulamaya **ilk ağ erişimi**dir; CLAUDE.md kural 5 ('veri buluta gönderilmez') ile uyum için sınırlar: yalnızca kullanıcı 'İndir…'e basıp onay kutusunu onaylarsa; yalnızca `github.com/tesseract-ocr/tessdata_fast|tessdata_best` içindeki `<dil>.traineddata` istenir (izinli sunucular: github.com, raw/media.githubusercontent.com; yönlendirme denetlenir); belge/kişisel veri GİDEMEZ; dosya kullanılmadan önce doğrulanır; internetsiz için 'Dosyadan Ekle'. Hakkında ve Yardım→Gizlilik bu tek istisnayı açıkça yazar. CLAUDE.md kural 5'e bu istisna yazıldı (kullanıcı onayıyla, 2026-10-17).
+- 2026-10-17: **Paketleme = PyInstaller onedir, UPX kapalı, konsolsuz exe, imzasız.** onedir: PySide6 LGPL yeniden bağlama hakkı (CLAUDE.md kural 3). Paket ancak paketlenmiş exe `--oz-sinama` ile 15/15 kontrolü geçerse kabul edilir (`paketle.py` aksi hâlde 1 döner). AGPL: tam kaynak `*-kaynak.zip` (git archive HEAD) ve `UCUNCU_TARAF_LISANSLAR.txt` pakete konur; dağıtılmayan Qt modüllerinin (WebEngine/Pdf/Addons) lisansı listelenmez. `dist/` ve `build/` depoya girmez.
 
 ## 6. Açık sorular / bekleyenler
 - Dil verisi yeni kurulumda elle konmalı (`%APPDATA%\EaglePDF\tessdata`); ileride uygulama içinden indirme/kurulum sihirbazı düşünülebilir.
@@ -140,5 +146,6 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 - **Kaçış tuzağı (adım 7):** kabuk/heredoc ile Python'a `\\t`, `\\n` yazınca gerçek TAB/satır sonu oluşuyor; bu yüzden README/yardım/surec'teki `%APPDATA%\\EaglePDF\\tessdata` yolu bozulmuştu (kullanıcıya görünen yardımda da). Çok satırlı/ters eğik çizgili metni **Write/Edit** ile yaz; `tests/test_yardim_kapsami.py` yardımdaki TAB/kontrol karakterlerini ve tessdata yolunu denetler.
 - **Tek örnek tuzakları (adım 6):** (1) Bu Qt/Windows sürümünde **aynı adlı adlandırılmış boruya ikinci `QLocalServer.listen` BAŞARILI olur** (istemciler iki sunucu arasında paylaştırılır) → tek örnek garantisi için `QLockFile` şart (`%TEMP%\EaglePDF-tek-ornek-<kullanıcı>.lock`; zorla öldürülen sürecin bayat kilidi bir sonraki açılışta temizlenir, doğrulandı). (2) Windows'ta yazma taşmalıdır: `waitForBytesWritten` tek başına `False` dönebilir; `gonder` 'yazılmamış bayt kalmadı'yı `processEvents` ile bekler (yalnızca ana iş parçacığında; başka iş parçacığından `processEvents` testte çökertti). (3) Aynı iş parçacığında hem sunucu hem istemci olursa yazma tamamlanmaz → testler istemciyi **ayrı süreçte** (`cocuk()` yardımcısı) çalıştırır. (4) Testlerde `tek_ornek.sunucu_adi`'nı benzersiz adla yamala; yoksa gerçek çalışan EaglePDF ile kilit çakışır. (5) Windows komut satırı sınırı (~32 KB) yüzünden büyük test verisi argümanla geçirilmez. Gerçek başlatıcı (`main.py`) offscreen 6 sn hatasız çalıştı; iki gerçek pencereyle (çift tık) elle deneme yapılmadı.
 - **OCR dil verisi tuzakları (2026-10-17):** (1) **PySide6'da `Signal.emit()` `True` döndürür** → `emit(...) or iptal` yazılırsa her indirme ilk blokta iptal olur (testler yakaladı); ilerleme yöntemi emit sonrası `self._iptal` döndürmeli. (2) Tesseract **tamamı sıfır** (ya da bazı çöp) dosyayı hata vermeden yükleyip eski motora düşebiliyor → yalnızca 'yüklenebiliyor mu' denemesi yetmez; `traineddata` başlığı (int32 n + n×int64 ofset, -1 yok, artan, dosya içinde) ayrıca denetlenir. (3) İndirme doğrulanmadan hedefe konmaz; hata/iptalde eski dosya korunur (`os.replace`). (4) Gerçek indirme bir kez elle denendi (eng fast: 4.113.088 bayt, kurulu dosyayla aynı boyut); testler sahte ağ açıcısı kullanır, ağa çıkmaz. (5) Test klasörü: `ocr.kullanici_tessdata` ve `ocr.tessdata_adaylari` yamalanmazsa testler gerçek `%APPDATA%\EaglePDF\tessdata` klasörüne dokunur.
+- **Paketleme notları (2026-10-17):** (1) İlk PyInstaller derlemesi ~5 dk, boş RAM 1,3 GB iken sorunsuz bitti; ağır iş öncesi `Get-CimInstance Win32_OperatingSystem` ile belleğe bak. (2) `collect_submodules` iki zararsız uyarı verir (isteğe bağlı `xsdata`, `requests` kurulu değil: pyHanko ETSI üretilmiş modülleri ve requests tabanlı fetcher kullanılmıyor). (3) Donmuş uygulamada `resource_dir()` `_MEIPASS/eaglepdf` altına bakar → spec veri dosyalarını `eaglepdf` hedef klasörüne koyar. (4) `iliskilendirme.baslatici_komutu()` donmuşta `"EaglePDF.exe" "%1"` döner (`main.py` yok). (5) Pencereli exe'de `sys.stdout` None: kendini sınama raporu dosyaya yazılır; `paketle.py` konsol kod sayfası (cp1254) → ✓ karakterlerinde çökmesin diye stdout'u utf-8'e çevirir. (6) `paketle.py --derleme-yok`: derlemeyi atlayıp mevcut `dist`'i doğrular/zip'ler (kaynak zip HEAD'den üretilir → önce commit!). (7) Kill ile sonlandırılan paketli sürecin `%TEMP%\EaglePDF-tek-ornek-<kullanıcı>.lock` dosyası kalır; bayat kilit sonraki açılışta Qt tarafından temizlenir (doğrulandı). (8) Paketli exe elle denendi: açılış, tek pencere devri (ikinci süreç 1,2 sn'de 0 koduyla çıkıp dosyayı devretti). Gerçek ekranda (offscreen değil) görsel kontrol ve temiz bir bilgisayarda denemesi yapılmadı.
 - Test notu: `tests/test_donustur.py` Arial'a (`C:\Windows\Fonts\arial.ttf`) bağlı; yoksa atlanır.
 - RAM 7,9 GB ve dolu: büyük dönüşümlerde başka programları kapat. Git kimliği bu repoda yerel `Ata <ataeyvaz@gmail.com>`.

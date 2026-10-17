@@ -28,7 +28,10 @@ def _gerekli():
 
 
 def baslatici_komutu() -> str:
-    """`"pythonw.exe" "main.py" "%1"` (pythonw varsa konsol penceresi açılmaz)."""
+    """`"pythonw.exe" "main.py" "%1"` (pythonw varsa konsol penceresi açılmaz). Paketlenmiş (PyInstaller) uygulamada
+    `main.py` yoktur: komut uygulamanın kendi exe'sidir: `"EaglePDF.exe" "%1"`."""
+    if getattr(sys, "frozen", False):
+        return f'"{sys.executable}" "%1"'
     py = Path(sys.executable)
     pyw = py.with_name("pythonw.exe")
     ana = Path(__file__).resolve().parents[2] / "main.py"
