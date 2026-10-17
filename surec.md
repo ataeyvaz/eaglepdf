@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **417 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
+Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **468 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -15,9 +15,14 @@ Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellik
 | 5 OCR / koruma / dijital imza | **Koruma ✅** (Koruma menüsü: parola ekle AES-256 + izinler, parolayı kaldır, belge izinleri; çıktı hep yeni dosya). **OCR ✅** (OCR menüsü: aranabilir PDF yap, bölgeden metin çıkar; taranmış belgede Word/Excel/HTML/metin dönüşümü otomatik OCR). **Dijital imza ✅** (Koruma menüsü: sertifika oluştur, dijital imzala (görünür/görünmez, art arda), boş imza alanı, imzaları doğrula; imzalı belge kaydı uyarır) | ✅ |
 | Faz 1 artıkları | **Hepsi ✅:** ayarlar penceresi, belge özellikleri düzenleme, toplu yazdırma, belge sekmeleri | ✅ |
 | Sekmeler | Aynı pencerede en çok 8 belge; her sekme kendi sayfa/ölçek/arama/panel/geri al durumunu saklar; ✕/orta tık/sağ tık menüsü; Ctrl+Tab gezinme; çoklu açma (sürükle-bırak, komut satırı); açık dosyayı ezmeme; genel geri al bellek bütçesi (400 MB); tek pencere (çift tık → çalışan pencerede sekme, `QLockFile`+`QLocalServer`); isteğe bağlı oturum geri yükleme | ✅ |
-| Paketleme | PyInstaller **onedir** (`yapi/paketle.py` → `dist\EaglePDF\EaglePDF.exe`, taşınabilir zip + AGPL kaynak zip); paketlenmiş exe'de **kendini sınama** (`--oz-sinama`, 15 kontrol) geçmeden paket kabul edilmez; lisans dosyası otomatik; simge `yapi/eaglepdf.ico` | ✅ (kurulum sihirbazı/kod imzalama: karar bekliyor, §2-C) |
+| Paketleme | PyInstaller **onedir** (`yapi/paketle.py` → `dist\EaglePDF\EaglePDF.exe`, taşınabilir zip + AGPL kaynak zip); paketlenmiş exe'de **kendini sınama** (`--oz-sinama`, 16 kontrol) geçmeden paket kabul edilmez; lisans dosyası otomatik; simge `yapi/eaglepdf.ico` | ✅ (kurulum sihirbazı/kod imzalama: karar bekliyor, §2-C) |
 
 ## 2. Sıradaki işler (güncel, 2026-10-17)
+**YENİ İSTEKLER (kullanıcı, 2026-10-17) — üç özellik:**
+1. ✅ **Resimden OCR** (PNG/JPEG/TIFF/BMP/WEBP/GIF): `core/resim_ocr.py` + `ui/resim_ocr_penceresi.py`; OCR → Resimden Metin Çıkar…; ana pencereye resim sürükleyince de açılır. Çıktı seçmeli: metin (düzenlenebilir) → panoya / .txt (BOM'lu UTF-8) / aranabilir PDF (kaydedince sekmede açmayı önerir). Karar: 'ikisi birden, seçmeli'.
+2. ✅ **PDF sayfalarını JPEG/PNG olarak çıkarma** zaten vardı (Dönüştür → PDF'den → Resim; PNG/JPG/BMP/TIFF, 36–600 DPI, sayfa seçimi, tek uzun resim). Kullanıcı 'yalnızca haberim yoktu' dedi → ek geliştirme yok; yardımda 'Başlarken'e ipucu eklendi.
+3. ⏳ **Filigran temizleme** — `Desktop\pdfedit` (PDF Filigran Temizleyici v1.1: detector/cleaner/pdfops/raster/manual/preview/rules/report/cli, 14 test) EaglePDF'e taşınacak. **Karar (kullanıcı):** 'Taşı + Tesseract OCR + hız' (RapidOCR yerine Türkçe Tesseract → İ/Ö/Ş sorunu kalkar, onnxruntime almayız; taranmış sayfa taramasını hızlandır; vektör filigranın otomatik tespiti/1-bit taramalar bu turda YOK). Telif uyarısı: pdfedit README'sindeki 'yalnızca hakkın olan belgelerde kullan' uyarısı, temizlemeden önce açık onay kutusu olarak gösterilecek. Plan: (a) çekirdeği `eaglepdf/core/filigran/` altına Qt'siz taşı + 14 testi taşı, OCR'ı Tesseract'a bağla; (b) arayüz: Düzenle → Filigran Temizle… (tarama, bulgu ağacı, sayfa önizleme + kutular, elle alan işaretleme, önce/sonra onayı, sayfa aralığı/hariç, kurallar, rapor), sonuç yeni sekmede; (c) hız (küçük resimle taranmış-mı ön eleme) ve paketleme (`--oz-sinama`'ya kontrol).
+
 Planlı geliştirme bitti. Kalanlar üç grupta:
 
 **A. Kullanıcının elle denemesi gerekenler** (otomatik test edilemiyor; sorun çıkarsa bildirilir):
@@ -52,7 +57,7 @@ main.py, EaglePDF.bat, requirements.txt, README.md, LICENSE (AGPL-3.0)
 eaglepdf/__init__.py     APP_NAME (geçici ad, tek yer), PAKET_ADI, sürüm
 eaglepdf/metin_tr.py     Türkçe büyük/küçük harf (str.lower/upper YASAK; testlerde bile bunu kullan)
 eaglepdf/yardim.md       Nasıl Kullanılır (konu ayracı: <!-- konu: kimlik | Başlık -->, {APP_NAME} yer tutucu)
-eaglepdf/oz_sinama.py      kendini sınama (15 kontrol; `main.py --oz-sinama[=rapor.txt]`; paketlenmiş exe'de de çalışır)
+eaglepdf/oz_sinama.py      kendini sınama (16 kontrol; `main.py --oz-sinama[=rapor.txt]`; paketlenmiş exe'de de çalışır)
 yapi/                    paketleme: EaglePDF.spec (onedir), paketle.py (derle+doğrula+zip), lisanslari_topla.py, ikon_uret.py, eaglepdf.ico
 requirements-yapi.txt    yalnızca derleme (PyInstaller)
 eaglepdf/core/           Qt'siz
@@ -61,6 +66,7 @@ eaglepdf/core/           Qt'siz
   duzenleme.py           kırp, boyut, filigran(+kaldır), arka plan, üst/alt bilgi, sayfa no, redaction, düzleştir, mühür, metin düzenleme
   donustur.py            tüm dönüştürmeler, sıkıştır, karşılaştır (ilerleme callback + Iptal)
   tarayici.py            WIA (comtypes) tarama
+  resim_ocr.py           resim dosyalarından OCR (PNG/JPEG/TIFF/BMP/WEBP/GIF; çok kareli TIFF; EXIF; A4 bellek içi PDF → aranabilir_yap → metin + PDF baytları)
   ocr.py                 OCR (PyMuPDF içindeki Tesseract; OcrIslemleri karışımı Belge'ye: aranabilir_yap, bolgeden_metin, metinsiz_sayfalar)
   dijital_imza.py        pyHanko ile imzala/doğrula/boş alan/sertifika üret (artımlı güncelleme; yeni dosyaya yazar)
   iliskilendirme.py      Windows 'Birlikte aç' kaydı (HKCU\Software\Classes\EaglePDF.PDF; yalnızca kullanıcı düzeyi)
@@ -77,6 +83,7 @@ eaglepdf/ui/             PySide6
   donusum_arayuzu.py     Faz 4 (Dönüştür menüsü, tarayıcı akışı)
   koruma_arayuzu.py      Faz 5 (Koruma menüsü, ParolaEkleDialog)
   toplu_yazdir.py        toplu yazdırma: toplu_yazdir() (Qt yazıcı, hata yalıtımı) + TopluYazdirPenceresi
+  resim_ocr_penceresi.py Resimden Metin Çıkar penceresi (OCR menüsü; ana pencereye resim sürüklenince de açılır; metin/pano/.txt/aranabilir PDF)
   ocr_veri_penceresi.py  OCR Dil Verisi penceresi (indir/dosyadan ekle/sil; indirme QThread'de)
   ozellikler_penceresi.py Belge Özellikleri (düzenlenebilir 4 alan + salt okunur bilgi + temizle); çekirdek: Belge.ozellikleri_ata/temizle/pdf_tarihi
   ayarlar_penceresi.py   Ayarlar (Genel / Klasörler ve OCR / Dosya İlişkisi); QSettings'e yazar, ana pencere `ayarlari_uygula`
@@ -112,7 +119,8 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 - 2026-10-16: Dönüştürme bağımlılıkları (hepsi izin verici lisans): pdf2docx (MIT), python-docx (MIT), openpyxl (MIT), python-pptx (MIT), mammoth (BSD-2), numpy (BSD-3), Pillow (HPND), comtypes (MIT, tarayıcı). Word/Excel→PDF için Office gerekmez (mammoth/openpyxl → HTML → PyMuPDF Story).
 - 2026-10-16: Kullanıcı "sınırlar" ifadesinden rahatsız oldu → "sonra çözeceğimiz noktalar" dili kullanılır.
 - 2026-10-17: **OCR dil verisi uygulama içinden indirilebilir** (kullanıcı 'OCR dil verisi kurulumuyla başla' dedi; B listesinde 'dil verisini uygulama içinden indirme' vardı). Bu, uygulamaya **ilk ağ erişimi**dir; CLAUDE.md kural 5 ('veri buluta gönderilmez') ile uyum için sınırlar: yalnızca kullanıcı 'İndir…'e basıp onay kutusunu onaylarsa; yalnızca `github.com/tesseract-ocr/tessdata_fast|tessdata_best` içindeki `<dil>.traineddata` istenir (izinli sunucular: github.com, raw/media.githubusercontent.com; yönlendirme denetlenir); belge/kişisel veri GİDEMEZ; dosya kullanılmadan önce doğrulanır; internetsiz için 'Dosyadan Ekle'. Hakkında ve Yardım→Gizlilik bu tek istisnayı açıkça yazar. CLAUDE.md kural 5'e bu istisna yazıldı (kullanıcı onayıyla, 2026-10-17).
-- 2026-10-17: **Paketleme = PyInstaller onedir, UPX kapalı, konsolsuz exe, imzasız.** onedir: PySide6 LGPL yeniden bağlama hakkı (CLAUDE.md kural 3). Paket ancak paketlenmiş exe `--oz-sinama` ile 15/15 kontrolü geçerse kabul edilir (`paketle.py` aksi hâlde 1 döner). AGPL: tam kaynak `*-kaynak.zip` (git archive HEAD) ve `UCUNCU_TARAF_LISANSLAR.txt` pakete konur; dağıtılmayan Qt modüllerinin (WebEngine/Pdf/Addons) lisansı listelenmez. `dist/` ve `build/` depoya girmez.
+- 2026-10-17: **Paketleme = PyInstaller onedir, UPX kapalı, konsolsuz exe, imzasız.** onedir: PySide6 LGPL yeniden bağlama hakkı (CLAUDE.md kural 3). Paket ancak paketlenmiş exe `--oz-sinama` ile 15/16 kontrolü geçerse kabul edilir (`paketle.py` aksi hâlde 1 döner). AGPL: tam kaynak `*-kaynak.zip` (git archive HEAD) ve `UCUNCU_TARAF_LISANSLAR.txt` pakete konur; dağıtılmayan Qt modüllerinin (WebEngine/Pdf/Addons) lisansı listelenmez. `dist/` ve `build/` depoya girmez.
+- 2026-10-17: **Resimden OCR çıktısı seçmeli** (metin + aranabilir PDF) — kullanıcı. **Filigran temizleme kapsamı: pdfedit'ten taşı + Tesseract OCR + hız** — kullanıcı; temizlemeden önce telif/hak onayı zorunlu (pdfedit README uyarısı). PDF→resim zaten var: ek iş yok.
 
 ## 6. Açık sorular / bekleyenler
 - Dil verisi yeni kurulumda elle konmalı (`%APPDATA%\EaglePDF\tessdata`); ileride uygulama içinden indirme/kurulum sihirbazı düşünülebilir.

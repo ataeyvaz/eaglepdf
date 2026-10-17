@@ -23,6 +23,7 @@ from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi, _dogru_mu
 from .imza_arayuzu import ImzaArayuzu
 from .sekme_cubugu import SekmeCubugu
+from ..core.resim_ocr import resim_mi
 from .tek_ornek import TekOrnekSunucu
 from ..core import gecmis as gecmis_modulu
 from .oturum import BUYUK_BELGE_BAYT, EN_COK_SEKME, BelgeOturumu, sekme_basligi, sekme_ipucu
@@ -875,12 +876,18 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
 
     # --- sürükle-bırak ---
     def dragEnterEvent(self, olay):
-        if olay.mimeData().hasUrls() and any(u.toLocalFile().lower().endswith(".pdf") for u in olay.mimeData().urls()):
+        if olay.mimeData().hasUrls() and any(
+                u.toLocalFile().lower().endswith(".pdf") or resim_mi(u.toLocalFile()) for u in olay.mimeData().urls()):
             olay.acceptProposedAction()
 
     def dropEvent(self, olay):
-        self.ac_coklu([u.toLocalFile() for u in olay.mimeData().urls() if u.toLocalFile().lower().endswith(".pdf")])
+        """PDF'ler sekmede açılır; resimler (PNG, JPEG, TIFF…) 'Resimden Metin Çıkar' penceresine hazır gelir."""
+        dosyalar = [u.toLocalFile() for u in olay.mimeData().urls()]
         olay.acceptProposedAction()
+        self.ac_coklu([d for d in dosyalar if d.lower().endswith(".pdf")])
+        resimler = [os.path.normpath(d) for d in dosyalar if resim_mi(d)]
+        if resimler:
+            self.resim_ocr_ac(resimler)
 
     # --- sayfa işlemleri ---
     def _hedef_sayfalar(self) -> list[int]:

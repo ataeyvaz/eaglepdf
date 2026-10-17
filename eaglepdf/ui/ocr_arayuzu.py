@@ -106,8 +106,10 @@ class OcrArayuzu:
         self._arac_eylemleri["ocr_bolge"] = e
         self._ek_ipuclari = {**getattr(self, "_ek_ipuclari", {}), **IPUCLARI}
         self.e_ocr_veri = self._eylem("Dil Verisi…", self.ocr_veri_ac)   # belge açık olmasa da kullanılabilir
+        self.e_resim_ocr = self._eylem("Resimden Metin Çıkar…", self.resim_ocr_ac, simge="resim")   # belge gerekmez
         self.m_ocr.addAction(self.e_aranabilir)
         self.m_ocr.addAction(e)
+        self.m_ocr.addAction(self.e_resim_ocr)
         self.m_ocr.addSeparator()
         self.m_ocr.addAction(self.e_ocr_veri)
         self._belge_eylemleri += [self.e_aranabilir, e]
@@ -123,6 +125,17 @@ class OcrArayuzu:
         if cevap == QMessageBox.Yes:
             self.ocr_veri_ac()
         return bool(dil_secenekleri())
+
+    def resim_ocr_ac(self, yollar=None):
+        """OCR → Resimden Metin Çıkar…: PNG/JPEG/TIFF… dosyalarını okur; metin ve aranabilir PDF çıktısı verir.
+        `yollar`: pencereye sürüklenen resimler (varsa listeye hazır gelir)."""
+        if not self._ocr_hazir_mi():
+            return
+        from pathlib import Path
+        from .resim_ocr_penceresi import ResimOcrPenceresi   # yöntem içinde: ocr_arayuzu ↔ resim_ocr_penceresi döngüsünü önler
+        d = ResimOcrPenceresi(self, yollar, str(self.ayarlar.value("ocr_dil", "")), engel_fn=self._acik_dosya_engeli)
+        d.pdfKaydedildi.connect(lambda yol: self._kopyayi_ac_sor(Path(yol), f"Aranabilir PDF kaydedildi: {yol}"))
+        d.exec()
 
     def ocr_veri_ac(self):
         """OCR → Dil Verisi…: kurulu dilleri gösterir; indirme/dosyadan ekleme/silme."""

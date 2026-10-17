@@ -98,3 +98,10 @@ def test_ocr_dil_verisi_ve_gizlilik_agi_acikca_soyler(konular):
     assert "ağ erişimi" in gizlilik and "dil dosyasının" in gizlilik and "kişisel veri gönderilmez" in gizlilik
     from eaglepdf.ui.hakkinda import GIZLILIK
     assert "ağ erişimi" in GIZLILIK and "OCR dil dosyasının indirilmesi" in GIZLILIK and "belgeleriniz hiçbir sunucuya gönderilmez" in GIZLILIK
+
+
+def test_resimden_ocr_ve_sayfa_resim_yardimda_anlatiliyor(konular):
+    ocr = konular["ocr"].govde
+    for beklenen in ("Resimden Metin Çıkar…", "Resim Ekle…", "Panoya Kopyala", "Metni Kaydet (.txt)…", "Aranabilir PDF Kaydet…", "EXIF", "TIFF"):
+        assert beklenen in ocr, beklenen
+    assert "PDF'den → Resim" in konular["baslarken"].govde and "Resimden Metin Çıkar…" in konular["baslarken"].govde

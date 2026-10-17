@@ -182,6 +182,32 @@ def _ocr(t: Path):
     return "taranmış sayfa → aranabilir (Tesseract)"
 
 
+def _resim_ocr(t: Path):
+    """Resim biçimleri (Pillow eklentileri: PNG/JPEG/BMP/TIFF/WEBP/GIF) çözülür; İngilizce verisi varsa OCR da denenir."""
+    import io
+
+    import pymupdf
+    from PIL import Image
+    from .core import donustur, resim_ocr
+    doc = pymupdf.open()
+    sayfa = doc.new_page(width=600, height=160)
+    sayfa.insert_text((30, 90), "Hello World report", fontsize=30, fontname="helv")
+    im = Image.open(io.BytesIO(sayfa.get_pixmap(dpi=150, alpha=False).tobytes("png"))).convert("RGB")
+    doc.close()
+    yollar = []
+    for uzanti in (".png", ".jpg", ".bmp", ".tif", ".webp", ".gif"):
+        yol = t / f"r{uzanti}"
+        im.save(yol)
+        donustur._resmi_hazirla(yol)   # eklenti yoksa BelgeHatasi/OSError
+        yollar.append(yol)
+    detay = f"{len(yollar)} biçim çözüldü"
+    if resim_ocr.ocr.hazir_mi("eng"):
+        s = resim_ocr.resimlerden_ocr(yollar[:1], dil="eng")
+        assert "Hello" in s.sayfalar[0].metin, f"resim OCR metni bulunamadı: {s.sayfalar[0].metin!r}"
+        detay += ", PNG → OCR → metin + aranabilir PDF"
+    return detay
+
+
 def _yazdirma(t: Path):
     from PySide6.QtPrintSupport import QPrinter
     from .core.belge import Belge
@@ -265,6 +291,7 @@ KONTROLLER = (
     ("Dijital imza (pyHanko, cryptography, uharfbuzz)", _dijital_imza),
     ("XMP (lxml)", _xmp),
     ("OCR (Tesseract, dil verisi varsa)", _ocr),
+    ("Resim biçimleri ve resimden OCR (Pillow)", _resim_ocr),
     ("Yazdırma (QtPrintSupport)", _yazdirma),
     ("Tek örnek (QtNetwork, QLockFile)", _tek_ornek_soket),
     ("Birlikte aç komutu", _iliskilendirme_komutu),

@@ -555,14 +555,17 @@ def excel_den_pdf(yol, klasor, ilerleme=None) -> Path:
     return hedef
 
 
-def _resmi_hazirla(yol: Path):
+def _resmi_hazirla(yol: Path, kare: int = 0):
     """Resmi PDF'e gömülecek biçimde (bayt, uzantı, genişlik_px, yükseklik_px) hazırlar: EXIF yönü uygulanır,
-    saydamlık beyaza düzleştirilir; uygun JPEG'ler olduğu gibi (kayıpsız) gömülür."""
+    saydamlık beyaza düzleştirilir; uygun JPEG'ler olduğu gibi (kayıpsız) gömülür.
+    `kare`: çok kareli TIFF/GIF'te hangi kare (0 tabanlı)."""
     Image = _pillow()
     from PIL import ImageOps
     try:
         with Image.open(yol) as im:
-            ham_jpeg = im.format == "JPEG" and (im.getexif().get(274, 1) in (0, 1)) and im.mode in ("RGB", "L")
+            if kare:
+                im.seek(kare)
+            ham_jpeg = kare == 0 and im.format == "JPEG" and (im.getexif().get(274, 1) in (0, 1)) and im.mode in ("RGB", "L")
             im.load()
             dondurulmus = ImageOps.exif_transpose(im)
             if ham_jpeg:
