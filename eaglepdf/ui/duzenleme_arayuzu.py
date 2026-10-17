@@ -58,6 +58,7 @@ class DuzenlemeArayuzu:
         self.e_ozel_muhur = self._eylem("Özel Mühür Oluştur…", self.ozel_muhur_olustur)
         self.e_ara_sil = self._eylem("Metni Ara ve Kalıcı Sil…", self.metin_ara_ve_sil, simge="redaction")
         self.e_duzlestir = self._eylem("Düzleştir…", self.duzlestir_ac, simge="duzlestir")
+        self.e_fil_temizle = self._eylem("Filigran Temizle…", self.filigran_temizle_ac, simge="filigran")
         self.e_kirp = self._eylem("Kırp…", self.kirp_ac, simge="kirp")
         self.e_kirpma_kaldir = self._eylem("Kırpmayı Kaldır", self.kirpmayi_kaldir)
         self.e_boyut = self._eylem("Sayfa Boyutu…", self.boyut_ac, simge="boyut")
@@ -79,6 +80,7 @@ class DuzenlemeArayuzu:
         self.m_duzenle.addAction(self.e_ara_sil)
         self.m_duzenle.addSeparator()
         self.m_duzenle.addAction(self.e_duzlestir)
+        self.m_duzenle.addAction(self.e_fil_temizle)
 
         # Sayfa menüsüne
         self.m_sayfa.addSeparator()
@@ -108,7 +110,7 @@ class DuzenlemeArayuzu:
         for e in (self.e_kirp, self.e_boyut, self.e_filigran, self.e_arka_plan, self.e_ustalt, self.e_numara):
             self.duzenleme_arac.addAction(e)
 
-        self._belge_eylemleri += [self.e_resim, self.e_ozel_muhur, self.e_ara_sil, self.e_duzlestir, self.e_kirp,
+        self._belge_eylemleri += [self.e_fil_temizle, self.e_resim, self.e_ozel_muhur, self.e_ara_sil, self.e_duzlestir, self.e_kirp,
                                   self.e_kirpma_kaldir, self.e_boyut, self.e_filigran, self.e_filigran_kaldir, self.e_arka_plan,
                                   self.e_ustalt, self.e_numara, a["metin_duzenle"], a["resim"], a["muhur"], a["redaction"]]
         self._muhur_dugme = muhur_dugme
@@ -186,6 +188,24 @@ class DuzenlemeArayuzu:
         else:
             self._uygula(lambda: self.belge.filigran_resim(v["sayfalar"], v["png"], v["genislik_orani"], v["on_plan"]),
                          "Filigran eklendi.")
+
+    def filigran_temizle_ac(self):
+        """Düzenle → Filigran Temizle…: kayıtlı dosyayı tarar; seçilenleri siler, temiz kopyayı yeni dosyaya yazar."""
+        b = self.belge
+        if not b:
+            return
+        if not b.yol or not b.yol.exists():
+            QMessageBox.information(self, APP_NAME, "Filigran temizleme kayıtlı bir dosya ister. Önce belgeyi kaydedin.")
+            return
+        if b.degisti and QMessageBox.question(
+                self, APP_NAME, "Belgede kaydedilmemiş değişiklikler var. Filigran temizleme dosyanın kayıtlı halinde çalışır, "
+                                "bu değişiklikler temiz kopyaya girmez.\n\nYine de devam edilsin mi?",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return
+        from .filigran_penceresi import FiligranPenceresi
+        d = FiligranPenceresi(self, str(b.yol), b._parola, engel_fn=self._acik_dosya_engeli)
+        d.temizKaydedildi.connect(lambda yol: self._kopyayi_ac_sor(Path(yol), f"Filigransız kopya kaydedildi: {yol}"))
+        d.exec()
 
     def filigran_kaldir_ac(self):
         if not self.belge:

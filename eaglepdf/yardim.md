@@ -109,6 +109,18 @@ Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başl
 
 Bu işlemler kaydedene dek dosyaya yazılmaz; hepsi **Geri Al** ile geri alınabilir.
 
+<!-- konu: filigran-temizle | Filigran Temizle (başka kaynaktan gelen filigranlar) -->
+**Düzenle → Filigran Temizle…** belgedeki filigranı (Acrobat katmanı, tekrar eden yazı/logo/bağlantı, taranmış sayfa üstündeki yazı, belge bilgilerindeki yayıncı adı) bulup **gerçekten siler**; üstünü örtmez. Yalnızca **hakkınız olan** belgelerde kullanın: pencerenin altındaki onay kutusunu işaretlemeden silme düğmesi açılmaz.
+
+1. **Filigranları Tara:** bulgular listelenir; filigran olma ihtimali yüksekler otomatik işaretlenir. Bir bulguya tıklayınca nedenleri görünür, sayfa önizlemesinde kutusu mavi çizilir (işaretliler kırmızı).
+2. **Temizlenmiş halini göster:** seçili sayfanın silindikten sonraki görünümünü önceden gösterir.
+3. **Alan İşaretle:** otomatik bulunmayan filigran için önizlemede üstüne dikdörtgen sürükleyin; o alandaki nesneler aranır ve listeye eklenir.
+4. **Yalnızca / Hariç sayfalar:** temizlemeyi sayfa aralığıyla sınırlar (örn. `1-5, 8`).
+5. **Kural:** işaretlediğiniz bulguları adla kaydedin; aynı yayıncının başka belgesinde **Kuralı Uygula** ile tek adımda seçin. **Raporu Kaydet…** bulguları JSON ya da CSV yazar.
+6. **Seçilenleri Sil ve Kaydet…:** sonuç her zaman **yeni dosyaya** yazılır (varsayılan `ad_temiz.pdf`); orijinal değişmez. Kayıttan sonra silinen filigranın kalıp kalmadığı doğrulanır, kalan varsa uyarılır. Şifreli belgede çıktı aynı şifreyle korunur.
+
+Taranmış sayfalarda filigran yazısını okumak için OCR dil verisi (Türkçe) gerekir (**OCR → Dil Verisi…**); yoksa temizleme yine çalışır ama yazı okunamaz. 1-bit (siyah-beyaz) taramalar ve yalnızca çizgi/şekilden oluşan filigranların otomatik tespiti bu sürümde yok; çizimler için **Alan İşaretle** kullanılabilir. Kaydedilmemiş değişiklikler dosyanın kayıtlı halinde olmadığı için temiz kopyaya girmez.
+
 <!-- konu: donusturme | Dönüştürme (Word, Excel, PowerPoint, resim, metin, HTML) -->
 **Dönüştür** menüsü, belgelerinizi başka biçimlere çevirir; her şey bu bilgisayarda yapılır. Açık belge kayıtlıysa pencereye otomatik eklenir (kaydedilmemiş değişiklikler varsa önce sorulur); başka dosyaları **Ekle…** ile ya da pencereye sürükleyerek ekleyebilirsiniz. Birden çok dosya art arda işlenir, ilerleme gösterilir, istediğiniz an **İptal** edebilirsiniz. Sonuçlar özgün dosyaların üzerine yazılmaz (ad çakışırsa “ad (2)” verilir).
 
