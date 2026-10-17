@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **490 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
+Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **500 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -40,7 +40,7 @@ Planlı geliştirme bitti. Kalanlar üç grupta:
 6. Word/Excel→PDF'te Office/LibreOffice kuruluysa yüksek sadakat; PDFgear'ı elle açıp `docs/ozellikler.md` ⚠ noktalarını gözlemle.
 
 **C. Karar bekleyenler (kullanıcıya sorulur, önceden yapılmaz):**
-- **Paketleme (kalan):** ✅ taşınabilir onedir klasör + zip yapıldı (2026-10-17). Sorulacaklar: (a) **kurulum sihirbazı** (Inno Setup: Başlat menüsü/masaüstü kısayolu, .pdf 'Birlikte aç' kaydı, kaldırıcı; `winget install JRSoftware.InnoSetup` gerekir → onay), (b) **kod imzalama** (ücretli sertifika; yoksa SmartScreen uyarısı çıkar), (c) sürüm numarası/yayın, (d) boyut kırpma (şimdi 347 MB: cv2 111, PySide6 94; yazılım OpenGL/Qt Quick/Qml/Pdf DLL'leri ~40 MB kırpılabilir, risk: DLL bağımlılığı → kendini sınama yakalar).
+- **Paketleme (kalan):** ✅ taşınabilir onedir klasör + zip yapıldı (2026-10-17). Sorulacaklar: (a) **kurulum sihirbazı** (**akıllı kurulum şart: bkz. §5 2026-10-17 'Kurulum paketi' kararı**; Inno Setup: Başlat menüsü/masaüstü kısayolu, .pdf 'Birlikte aç' kaydı, kaldırıcı; `winget install JRSoftware.InnoSetup` gerekir → onay), (b) **kod imzalama** (ücretli sertifika; yoksa SmartScreen uyarısı çıkar), (c) sürüm numarası/yayın, (d) boyut kırpma (şimdi 347 MB: cv2 111, PySide6 94; yazılım OpenGL/Qt Quick/Qml/Pdf DLL'leri ~40 MB kırpılabilir, risk: DLL bağımlılığı → kendini sınama yakalar).
 - **GitHub'a koymak** (`push` kullanıcı onayıyla), ad kalıcılaştırma (`APP_NAME` geçici sabit), Hakkında/iletişim bilgileri.
 
 ## 3. Çalışma sistemi (her adımda)
@@ -127,6 +127,7 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 
 - 2026-10-17: **Filigran Temizle arayüzü (aşama b):** `ui/filigran_penceresi.py`, menü Düzenle → Filigran Temizle… (`duzenleme_arayuzu.filigran_temizle_ac`). Çekirdek dosya üzerinde çalışır → kayıtlı dosya gerekir; kaydedilmemiş değişiklik varsa uyarır. Telif onay kutusu işaretlenmeden silme düğmesi kapalı; çıktı hep yeni dosya (orijinal üzerine yazma reddedilir), `verify=True` ile kalan filigran uyarılır; sonuç için 'şimdi aç' sorulur. 10 test (`tests/test_filigran_penceresi.py`), yardım konusu `filigran-temizle`.
 - 2026-10-17: **Filigran hız (c):** `raster.scanned_image` artık `get_image_rects`/`get_image_info(xrefs=True)` (her resmi çözüp ~0,14 sn/sayfa harcıyordu) yerine hızlı `get_image_info()` + boyuta göre xref eşlemesi kullanır (belirsizse eski yola düşer): 40 sayfalık 200 DPI tarama 15 → 9,2 sn. Kalan süre gerçek resim çözme + numpy (gerekli). Küçük resim ön eleme gerekmedi. `oz_sinama` 17. kontrol: Filigran temizleme (OpenCV/numpy).
+- 2026-10-17: **Kurulum paketi: Eagle Office ailesi için akıllı kurulum (kullanıcı kararı).** Kurulum/güncelleme paketi hazırlanırken: (1) cihazda zaten kurulu Eagle Office uygulamaları (EaglePDF, Tabcel, Sözcük…) **sürümü denetlenir**; (2) **güncelleme yoksa (kurulu sürüm ≥ paketteki) eski sürümlere dokunulmaz**, yeniden kurulmaz/ezilmez; (3) yalnızca **cihazda kurulu olmayan** uygulamalar kurulur — örn. cihazda yalnızca Tabcel ve Sözcük varsa yalnızca EaglePDF kurulur; (4) paketteki sürüm daha yeniyse yalnızca o uygulama güncellenir. Uygulama (Inno Setup betiği/sürüm tespiti: kayıt defteri kaldırma anahtarı ya da kurulum klasöründeki sürüm dosyası; Tabcel/Sözcük'ün kurulum yeri ve sürüm biçimi onların `surec.md` dosyalarından öğrenilmeli) kurulum sihirbazı işine başlanınca yapılır; bu karar o işin gereksinimidir.
 
 ## 6. Açık sorular / bekleyenler
 - Dil verisi yeni kurulumda elle konmalı (`%APPDATA%\EaglePDF\tessdata`); ileride uygulama içinden indirme/kurulum sihirbazı düşünülebilir.
