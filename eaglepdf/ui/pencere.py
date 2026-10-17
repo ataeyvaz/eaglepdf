@@ -5,8 +5,8 @@ import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, Qt, QTimer, Signal
-from PySide6.QtGui import QAction, QActionGroup, QIcon, QIntValidator, QKeySequence
+from PySide6.QtCore import QSettings, QSize, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QAction, QActionGroup, QDesktopServices, QIcon, QIntValidator, QKeySequence
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
     QFileDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMessageBox, QSpinBox, QSplitter,
@@ -983,12 +983,30 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         klasor = QFileDialog.getExistingDirectory(self, "Parçaların yazılacağı klasör", str(self.belge.yol.parent))
         if not klasor:
             return
+        for n in range(1, len(pencere.parcalar) + 1):   # çıktı adları <ad>_1.pdf …: açık bir sekmenin dosyasını ezmesin
+            if self._acik_dosya_engeli(Path(klasor) / f"{self.belge.yol.stem}_{n}.pdf"):
+                return
         try:
             yazilan = belge_modulu.bol(self.belge.yol, klasor, parcalar=pencere.parcalar)
         except (BelgeHatasi, OSError) as h:
             QMessageBox.warning(self, APP_NAME, str(h))
             return
-        self.statusBar().showMessage(f"{len(yazilan)} dosya yazıldı: {klasor}", 8000)
+        self._parcalari_ac_sor(yazilan, klasor)
+
+    def _parcalari_ac_sor(self, yazilan: list, klasor):
+        """Bölme bitti: parçaları sekmelerde açmayı, klasörü göstermeyi ya da hiçbirini seçtirir."""
+        ileti = f"{len(yazilan)} dosya yazıldı: {klasor}"
+        self.statusBar().showMessage(ileti, 8000)
+        kutu = QMessageBox(QMessageBox.Question, APP_NAME, ileti + "\n\nNe yapmak istersiniz?", parent=self)
+        ac = kutu.addButton("Hepsini Aç", QMessageBox.AcceptRole)
+        klasor_dugme = kutu.addButton("Klasörü Göster", QMessageBox.ActionRole)
+        kutu.addButton("Kapat", QMessageBox.RejectRole)
+        kutu.exec()
+        secilen = kutu.clickedButton()
+        if secilen is ac:
+            self.ac_coklu([str(y) for y in yazilan])   # sekme sınırı aşılırsa kalanlar tek uyarıyla atlanır
+        elif secilen is klasor_dugme:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(str(klasor)))
 
     # --- arama ---
     def ara_ac(self):

@@ -3,7 +3,7 @@
 Kalıcı kurallar için `CLAUDE.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. `/clear` sonrası önce bunu oku.
 
 ## 1. Neredeyiz
-Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **345 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
+Planlanan **tüm fazlar ve artıklar tamam**: Faz 1–5, ayarlar, belge özellikleri, toplu yazdırma ve **belge sekmeleri** (plan: `docs/sekmeler-plani.md`, adım 1–7 bitti). Testler: `.venv\Scripts\python -m pytest` → **359 geçti** (tam paket ~4 dk; takılma riskine karşı parça parça + `timeout` ile çalıştır, bkz. §7 araç tuzakları). Kalan işler §2'de: elle denemeler, sonra çözülecek noktalar, karar bekleyenler.
 
 | Faz | İçerik | Durum |
 |---|---|---|
@@ -26,7 +26,7 @@ Planlı geliştirme bitti. Kalanlar üç grupta:
 - XMP güncelleme gerçek Acrobat/Word çıktılarıyla; görünür dijital imza kutusu başka okuyucularda (Acrobat) nasıl görünüyor.
 
 **B. Sonra çözülecek noktalar** (öneri sırası):
-1. Böl sonrası parçaları açma seçeneği. ~~Sekmede kaydırma konumu~~ ✅ (2026-10-17: `BelgeOturumu.kaydirma/duzen`, `Goruntuleyici.duzen_anahtari`; yalnızca ölçek/sayfa modu/sütun aynıysa geri yüklenir; yoksa sayfa).
+1. ~~Böl sonrası parçaları açma~~ ✅ (2026-10-17: `_parcalari_ac_sor` Hepsini Aç/Klasörü Göster/Kapat; çıktı adı açık sekmeyle çakışırsa başlamadan uyarır; `tests/test_bol_sonrasi.py`). ~~Sekmede kaydırma konumu~~ ✅ (2026-10-17: `BelgeOturumu.kaydirma/duzen`, `Goruntuleyici.duzen_anahtari`; yalnızca ölçek/sayfa modu/sütun aynıysa geri yüklenir; yoksa sayfa).
 2. OCR: `tessdata_best` seçeneği, dil verisini uygulama içinden indirme/kurulum sihirbazı; döndürülmüş sayfalar; Word çıktısında taranmış sayfa düzeni.
 3. Dijital imza: kutuyu sürükleyerek yerleştirme, zaman damgası (RFC 3161)/LTV, Windows sertifika deposundan seçme, çizilmiş imza resmini kutuya koyma.
 4. Geri al bütçesini (400 MB) ve sekme sınırını (8) Ayarlar'a taşımak.

@@ -61,7 +61,7 @@ Araç çubuğundaki iki araçtan biri her zaman açıktır:
 - **PDF Ekle (Sona):** başka bir PDF'in sayfalarını sona ekler.
 - **Sıralama:** küçük resimleri sürükleyip bırakarak sırayı değiştirin.
 - **Birleştir…:** birden çok PDF'i sırayla tek dosyada toplar.
-- **Böl…:** her n sayfada bir dosyaya ya da verdiğiniz aralıklara (örn. `1-3; 4-6`) böler.
+- **Böl…:** her n sayfada bir dosyaya ya da verdiğiniz aralıklara (örn. `1-3; 4-6`) böler. Bölme kayıtlı dosya üzerinde çalışır (önce kaydedin). İş bitince **Hepsini Aç** (parçalar sekmelerde açılır), **Klasörü Göster** ya da **Kapat** seçebilirsiniz. Çıktı adları `<ad>_1.pdf`, `<ad>_2.pdf`… olur; bu adlardan biri başka bir sekmede açıksa işlem başlamadan uyarılırsınız.
 
 Değişiklikler **Kaydet/Farklı Kaydet** yapılana dek dosyaya yazılmaz; başlıkta *değişti* görünür.
 
