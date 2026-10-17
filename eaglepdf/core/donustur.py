@@ -505,6 +505,35 @@ def word_den_pdf(yol, klasor, ilerleme=None) -> Path:
     return hedef
 
 
+def ofisle_pdf(tur: str, yol, klasor, ilerleme=None, ofis: bool = True) -> tuple[Path, str]:
+    """Word (`tur='word'`) ya da Excel (`'excel'`) dosyasını PDF'e çevirir. `ofis=True` ise önce bilgisayardaki Microsoft Word/Excel
+    ya da LibreOffice denenir (sayfa düzeni birebir); yoksa/başarısızsa yerleşik dönüştürücüye (mammoth/openpyxl) düşülür.
+    (çıktı yolu, kullanıcıya gösterilecek kısa açıklama) döner. Kaynak dosya değişmez."""
+    from . import ofis as ofis_modulu
+    yol = Path(yol)
+    yedek = word_den_pdf if tur == "word" else excel_den_pdf
+    neden = ""
+    if ofis:
+        motorlar = ofis_modulu.durum().motorlar(tur)
+        if motorlar:
+            hedef = benzersiz_yol(klasor, yol.stem, ".pdf")
+            _ilerle(ilerleme, 0, 1)
+            try:
+                motor = ofis_modulu.pdf_yap(tur, yol, hedef, iptal=(lambda: bool(ilerleme and ilerleme(0, 1))))
+            except Iptal:
+                hedef.unlink(missing_ok=True)
+                raise
+            except BelgeHatasi as h:
+                hedef.unlink(missing_ok=True)
+                neden = f"Office ile dönüştürülemedi ({h}); yerleşik dönüştürücü kullanıldı, sayfa düzeni birebir olmayabilir"
+            else:
+                _ilerle(ilerleme, 1, 1)
+                return hedef, f"{motor} ile dönüştürüldü (sayfa düzeni korunur)"
+        else:
+            neden = "Microsoft Office/LibreOffice bulunamadı; yerleşik dönüştürücü kullanıldı, sayfa düzeni birebir olmayabilir"
+    return yedek(yol, klasor, ilerleme), neden
+
+
 def _hucre_metni(v) -> str:
     if v is None:
         return ""

@@ -76,8 +76,11 @@ class DonusumArayuzu:
                 return
             if yol:
                 dosyalar = [yol]
-        d = DonusumPenceresi(tur, dosyalar, str(self.ayarlar.value("donusum_klasoru", "")), self)
+        ofis = str(self.ayarlar.value("ofis_motoru", True)).lower() != "false"
+        d = DonusumPenceresi(tur, dosyalar, str(self.ayarlar.value("donusum_klasoru", "")), self, ofis=ofis)
         d.exec()
+        if hasattr(d, "ofis_kutu") and d.ofis_kutu.isEnabled():
+            self.ayarlar.setValue("ofis_motoru", d.ofis_kutu.isChecked())   # seçim bir sonraki sefer hatırlanır
         if d.secili_klasor.isChecked() and d.klasor_kutu.text().strip():
             self.ayarlar.setValue("donusum_klasoru", d.klasor_kutu.text().strip())
         self._donusum_sonrasi(d)

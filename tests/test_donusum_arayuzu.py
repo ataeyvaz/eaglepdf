@@ -196,6 +196,8 @@ def test_diger_pdfe_donusumler(app, tmp_path):
     for tur, ad, aranan in (("word-pdf", "a.docx", "Word içeriği Işık"), ("excel-pdf", "a.xlsx", "Çay"),
                             ("metin-pdf", "a.txt", "Düz metin ğüş"), ("html-pdf", "a.html", "Başlık")):
         d = dialog(tur, [tmp_path / ad], tmp_path / f"o-{tur}")
+        if hasattr(d, "ofis_kutu"):
+            d.ofis_kutu.setChecked(False)   # bu test yerleşik dönüştürücüyü sınar (makinede Office olsa da değişmesin)
         d.basla()
         bitir(d)
         assert sonuc_metinleri(d)[0].startswith("✓"), (tur, sonuc_metinleri(d))
@@ -389,3 +391,17 @@ def test_tarayicidan_pdf_arayuzu(pencere, tmp_path, app, monkeypatch):
     monkeypatch.setattr(QMessageBox, "information", lambda *a, **k: bilgi.append(a[2]))
     pencere.tarayicidan_pdf()
     assert bilgi and "Windows" in bilgi[0]
+
+
+def test_word_excel_pdf_ofis_secenegi(app, tmp_path, monkeypatch):
+    from eaglepdf.core import ofis
+    monkeypatch.setattr(ofis, "durum", lambda: ofis.OfisDurumu(False, False, None))
+    d = dialog("word-pdf", [], tmp_path / "o")
+    assert not d.ofis_kutu.isEnabled() and not d.ofis_kutu.isChecked()          # Office yok: seçenek kapalı
+    assert d._secenek_degerleri() == {"ofis": False}
+    monkeypatch.setattr(ofis, "durum", lambda: ofis.OfisDurumu(True, True, None))
+    w = dialog("word-pdf", [], tmp_path / "o")
+    assert w.ofis_kutu.isEnabled() and w.ofis_kutu.isChecked() and w._secenek_degerleri() == {"ofis": True}
+    e = dialog("excel-pdf", [], tmp_path / "o")
+    from PySide6.QtWidgets import QLabel
+    assert e.ofis_kutu.isEnabled() and any("Bulundu: Microsoft Excel" in e_.text() for e_ in e.secenekler_kutusu.findChildren(QLabel))

@@ -89,8 +89,9 @@ class IsParcacigi(QThread):
 
 
 class DonusumPenceresi(QDialog):
-    def __init__(self, tur: str, dosyalar: list | None = None, klasor: str = "", parent=None):
+    def __init__(self, tur: str, dosyalar: list | None = None, klasor: str = "", parent=None, ofis: bool = True):
         super().__init__(parent)
+        self._ofis_baslangic = ofis   # Word/Excel → PDF: Office/LibreOffice varsa onu kullan
         self.tur = TURLER[tur]
         self.setWindowTitle(self.tur.baslik)
         self.resize(640, 640)
@@ -295,12 +296,22 @@ class DonusumPenceresi(QDialog):
             self.seviye_kutu.setCurrentIndex(1)
             f.addRow("Sıkıştırma:", self.seviye_kutu)
             f.addRow("", QLabel("Özgün dosyanız değişmez; sonuç “…_sikistirilmis.pdf” olarak yeni dosyaya yazılır."))
-        elif t == "word-pdf":
-            f.addRow("", QLabel("Başlık, paragraf, liste, tablo, resim ve temel biçim korunur; sayfa düzeni\n"
-                                "(üst/alt bilgi, sütun, metin kutusu) birebir gelmeyebilir."))
-        elif t == "excel-pdf":
-            f.addRow("", QLabel("Her çalışma sayfası bir tablo olarak yazılır; formüller son hesaplanan değerleriyle gelir.\n"
-                                "Çok sütunlu sayfalar yatay basılır."))
+        elif t in ("word-pdf", "excel-pdf"):
+            from ..core import ofis
+            motorlar = ofis.durum().motorlar("word" if t == "word-pdf" else "excel")
+            self.ofis_kutu = QCheckBox("Bilgisayardaki Office/LibreOffice ile dönüştür (sayfa düzeni birebir)")
+            self.ofis_kutu.setChecked(self._ofis_baslangic and bool(motorlar))
+            self.ofis_kutu.setEnabled(bool(motorlar))
+            f.addRow("", self.ofis_kutu)
+            f.addRow("", QLabel(("Bulundu: " + ", ".join(motorlar) + ". Dosya yalnızca bu bilgisayarda, salt okunur açılıp çevrilir; "
+                                 "ağa gönderilmez.") if motorlar else
+                                "Microsoft Office ya da LibreOffice bulunamadı; yerleşik dönüştürücü kullanılacak."))
+            if t == "word-pdf":
+                f.addRow("", QLabel("Yerleşik dönüştürücü: başlık, paragraf, liste, tablo, resim ve temel biçim korunur;\n"
+                                    "sayfa düzeni (üst/alt bilgi, sütun, metin kutusu) birebir gelmeyebilir."))
+            else:
+                f.addRow("", QLabel("Yerleşik dönüştürücü: her çalışma sayfası bir tablo olarak yazılır; formüller son\n"
+                                    "hesaplanan değerleriyle gelir. Çok sütunlu sayfalar yatay basılır."))
         if f.rowCount() == 0:
             self.secenekler_kutusu.hide()
 
@@ -356,6 +367,8 @@ class DonusumPenceresi(QDialog):
             return {"ayrac": self.ayrac_kutu.isChecked()}
         if t == "sikistir":
             return {"seviye": self.seviye_kutu.currentData()}
+        if t in ("word-pdf", "excel-pdf"):
+            return {"ofis": self.ofis_kutu.isChecked()}
         return {}
 
     def _gorev(self, t: str, yol: Path, klasor: Path, parola, sayfa_metni: str, s: dict):
@@ -383,10 +396,9 @@ class DonusumPenceresi(QDialog):
                 return [donustur.pdf_metin(yol, klasor, sayfalar(), s["ayrac"], parola, il)], ""
             if t == "pdf-html":
                 return [donustur.pdf_html(yol, klasor, sayfalar(), parola, il)], ""
-            if t == "word-pdf":
-                return [donustur.word_den_pdf(yol, klasor, il)], ""
-            if t == "excel-pdf":
-                return [donustur.excel_den_pdf(yol, klasor, il)], ""
+            if t in ("word-pdf", "excel-pdf"):
+                hedef, ileti = donustur.ofisle_pdf("word" if t == "word-pdf" else "excel", yol, klasor, il, s.get("ofis", True))
+                return [hedef], ileti
             if t == "metin-pdf":
                 return [donustur.metinden_pdf(yol, klasor, il)], ""
             if t == "html-pdf":
