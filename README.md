@@ -11,7 +11,7 @@ Kullanıcıya görünen ad geçicidir: `eaglepdf/__init__.py` içindeki `APP_NAM
 - **[Tabcel](https://github.com/ataeyvaz/tabcel)** — Türkçe hesap tablosu
 - **[EaglePDF](https://github.com/ataeyvaz/eaglepdf)** — Türkçe PDF görüntüleyici ve düzenleyici ← bu depo
 
-Kurulum paketi, kurulu uygulamaların sürümünü denetler: güncel olanlara dokunmaz, yalnızca eksik ya da eski olanları kurar.
+**[Eagle Office](https://github.com/ataeyvaz/eagle-office)** — üç uygulamayı tek pakette kuran depo (kurulum betiği, sürüm notları, indirmeler). Kurulum paketi, kurulu uygulamaların sürümünü denetler: güncel olanlara dokunmaz, yalnızca eksik ya da eski olanları kurar.
 
 ## Çalıştırma
 ```
