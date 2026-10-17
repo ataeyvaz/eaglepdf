@@ -139,6 +139,8 @@ Kullanıcı verisi (ayarlar, imzalar, mühürler): `%APPDATA%\EaglePDF\` (`Eagle
 
 - 2026-10-17: **Lisanslar (kullanıcı: 'paralı satmayacağım, koda göre seç'):** Sözcük, Tabcel, Eagle Office, EaglePDF hepsi **AGPL-3.0** (EaglePDF PyMuPDF yüzünden zorunlu; Sözcük/Tabcel bağımlılıkları uyumlu olduğundan ailede tek lisans). Sözcük'ün ses modeli (`sesler/ata.onnx`) ayrı **CC BY-NC-SA 4.0**. Yalnızca LICENSE + README eklendi; uygulamaların koduna/paketlemesine dokunulmadı. Sonra çözülecek: kurulum paketine Sözcük/Tabcel LICENSE dosyaları, Hakkında'ya lisans satırı.
 
+- 2026-10-17: **Eagle Office 1.2 bu bilgisayara kuruldu** (`C:\Program Files\Eagle Office`, kullanıcı isteği: 'hepsini kur, silme'). Paketler yeniden derlendi: EaglePDF paketi (182 sn) ve `eagle-office\dist\EagleOffice-1.2-kurulum.exe` (479 MB, 327 sn; Sözcük 1.5, Tabcel 0.1, EaglePDF 0.1; son özellikler dahil). Akıllı kurulum gerçek makinede çalıştı: Sözcük/Tabcel 1.1'den kalma (sürüm kaydı yok → 'bilinmiyor') olduğundan DOKUNULMADI (dosya boyutları bayt bayt aynı doğrulandı), yalnızca EaglePDF eklendi; sürüm kaydı `HKLM\SOFTWARE\Eagle Office\Surumler\EaglePDF=0.1`; paketli kurulu exe `--oz-sinama` 17/17, açılış denendi. Not: Sözcük/Tabcel'in sürüm kaydı yok → sihirbaz onları her zaman 'sürümü bilinmiyor' sayar; yeni sürümle güncellemek için sihirbazda ilgili uygulamayı elle işaretlemek (ya da `/COMPONENTS=sozcuk,tabcel`) gerekir. Masaüstü kısayolu: herkes için (Public\Desktop\EaglePDF.lnk).
+
 ## 6. Açık sorular / bekleyenler
 - Dil verisi yeni kurulumda elle konmalı (`%APPDATA%\EaglePDF\tessdata`); ileride uygulama içinden indirme/kurulum sihirbazı düşünülebilir.
 - Tarayıcıdan PDF gerçek cihazla denenmedi (kullanıcıda tarayıcı varsa denenip geri bildirim alınmalı).
