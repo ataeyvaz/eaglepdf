@@ -5,7 +5,7 @@ import subprocess
 from contextlib import contextmanager
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, QSize, Qt, Signal
+from PySide6.QtCore import QSettings, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QAction, QActionGroup, QIcon, QIntValidator, QKeySequence
 from PySide6.QtPrintSupport import QPrintDialog, QPrinter
 from PySide6.QtWidgets import (
@@ -20,9 +20,10 @@ from . import simgeler, theme
 from .aciklama_arayuzu import AciklamaArayuzu
 from .donusum_arayuzu import DonusumArayuzu
 from .koruma_arayuzu import KorumaArayuzu
-from .ayarlar_penceresi import AyarlarPenceresi
+from .ayarlar_penceresi import AyarlarPenceresi, _dogru_mu
 from .imza_arayuzu import ImzaArayuzu
 from .sekme_cubugu import SekmeCubugu
+from .tek_ornek import TekOrnekSunucu
 from ..core import gecmis as gecmis_modulu
 from .oturum import BUYUK_BELGE_BAYT, EN_COK_SEKME, BelgeOturumu, sekme_basligi, sekme_ipucu
 from .ozellikler_penceresi import OzelliklerPenceresi
@@ -68,6 +69,12 @@ class SayfaKutusu(QLineEdit):
         self.valueChanged.emit(v)
 
 
+def ayarlari_ac(ayar_dosyasi: str | None = None) -> QSettings:
+    """Uygulama ayarları (INI). Başlatıcı (`main.py`) ve pencere aynı dosyayı kullanır."""
+    return (QSettings(ayar_dosyasi, QSettings.IniFormat) if ayar_dosyasi
+            else QSettings(QSettings.IniFormat, QSettings.UserScope, APP_NAME, APP_NAME))
+
+
 class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, DuzenlemeArayuzu, AciklamaArayuzu, QMainWindow):
     def __init__(self, ayar_dosyasi: str | None = None):
         super().__init__()
@@ -75,8 +82,10 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._etkin = -1                           # etkin oturumun sırası, yoksa -1
         self._mesgul = 0                           # >0: uzun işlem sürüyor, sekme değişimi yok sayılır
         self._geciste = False                      # sekme geçişi sürerken tekrar girişi önler
-        self.ayarlar = (QSettings(ayar_dosyasi, QSettings.IniFormat) if ayar_dosyasi
-                        else QSettings(QSettings.IniFormat, QSettings.UserScope, APP_NAME, APP_NAME))
+        self.ayarlar = ayarlari_ac(ayar_dosyasi)
+        self.tek_ornek: TekOrnekSunucu | None = None   # çalışan örnek sunucusu (başlatıcı atar)
+        self.tek_ornek_destegi = False                 # True: ayar değişince sunucu açılıp kapanır (yalnızca main.py açar)
+        self._bekleyen_yollar: list[str] = []          # işlem sürerken gelen açma istekleri
         self._sonuclar: list = []
         self._sonuc_no = -1
         self.setAcceptDrops(True)
@@ -369,6 +378,48 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
                                                     "açılmadı. Sekme kapatıp yeniden deneyin.")
         return acilan
 
+    # --- tek örnek ---
+    def tek_ornek_istegi(self, yollar: list):
+        """Başka bir başlatma (çift tık, “Birlikte aç”) dosyalarını bu pencereye yolladı: öne getir, sekmelerde aç."""
+        self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
+        self.raise_()
+        self.activateWindow()
+        QApplication.alert(self)
+        if yollar:
+            self.ac_coklu(yollar)
+
+    def _tek_ornek_ayarla(self):
+        """Ayardaki tek pencere tercihini çalışan uygulamaya uygular (yalnızca başlatıcı destek bayrağını açtıysa)."""
+        if not self.tek_ornek_destegi:
+            return
+        acik = _dogru_mu(self.ayarlar.value("tek_ornek", True))
+        if acik and self.tek_ornek is None:
+            sunucu = TekOrnekSunucu()
+            if sunucu.baslat():
+                sunucu.istekGeldi.connect(self.tek_ornek_istegi)
+                self.tek_ornek = sunucu
+        elif not acik and self.tek_ornek is not None:
+            self.tek_ornek.durdur()
+            self.tek_ornek = None
+
+    # --- oturum (açık sekmelerin hatırlanması) ---
+    def oturumu_kaydet(self):
+        """Açık sekmelerin yollarını ve etkin olanı ayarlara yazar (pencere kapanırken)."""
+        self.ayarlar.setValue("son_oturum", [str(o.belge.yol) for o in self._oturumlar if o.belge.yol])
+        self.ayarlar.setValue("son_oturum_etkin", str(self.belge.yol) if self.belge and self.belge.yol else "")
+
+    def oturumu_geri_yukle(self) -> int:
+        """Son oturumdaki sekmeleri sessizce açar (bulunamayan, parolalı ya da bozuk dosyalar atlanır). Açık sekme sayısını döndürür."""
+        v = self.ayarlar.value("son_oturum", [])
+        yollar = [v] if isinstance(v, str) else list(v or [])
+        for y in yollar:
+            if y and Path(y).is_file():
+                self.ac(y, sessiz=True)
+        etkin = str(self.ayarlar.value("son_oturum_etkin", "") or "")
+        if etkin and self._oturum_bul(etkin) >= 0:
+            self._etkinlestir(self._oturum_bul(etkin))
+        return len(self._oturumlar)
+
     def _acik_dosya_engeli(self, yol, kendisi_serbest: bool = False) -> bool:
         """`yol` bir sekmede açıksa kullanıcıyı uyarır ve True döner (üzerine yazmak Windows kilidi/bayat belge yaratır).
         `kendisi_serbest`: etkin sekmenin kendi dosyası engel sayılmaz (Farklı Kaydet aynı yola onayla yazabilir)."""
@@ -382,17 +433,24 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         """`yol` zaten bir sekmede açıksa sırası, değilse -1."""
         return next((i for i, o in enumerate(self._oturumlar) if o.ayni_dosya_mi(yol)), -1)
 
-    def ac(self, yol, yeniden=False):
+    def ac(self, yol, yeniden=False, sessiz=False):
         """Dosyayı yeni sekmede açar; zaten açıksa o sekmeye geçer.
-        `yeniden=True`: açık sekmedeki belge diskten yeniden yüklenir (kayıttan sonra gibi). Açmak mevcut belgeyi kapatmaz."""
+        `yeniden=True`: açık sekmedeki belge diskten yeniden yüklenir (kayıttan sonra gibi). Açmak mevcut belgeyi kapatmaz.
+        `sessiz=True` (oturum geri yükleme): parola sorulmaz, hata/sınır uyarısı gösterilmez, sorunlu dosya atlanır.
+        Uzun bir işlem sürerken (OCR, toplu yazdırma) açma isteği kuyruğa alınır; işlem bitince açılır."""
+        if self._mesgul:
+            self._bekleyen_yollar.append(str(yol))
+            self.statusBar().showMessage("Bir işlem sürüyor; dosya işlem bitince açılacak.", 4000)
+            return
         sira = self._oturum_bul(yol)
         if sira >= 0 and not yeniden:
             self._etkinlestir(sira)
             self.statusBar().showMessage(f"{Path(yol).name} zaten açık; o sekmeye geçildi.", 4000)
             return
         if sira < 0 and len(self._oturumlar) >= EN_COK_SEKME:
-            QMessageBox.information(self, APP_NAME, f"En çok {EN_COK_SEKME} belge aynı anda açık olabilir. "
-                                                    "Yeni belge açmadan önce bir sekmeyi kapatın.")
+            if not sessiz:
+                QMessageBox.information(self, APP_NAME, f"En çok {EN_COK_SEKME} belge aynı anda açık olabilir. "
+                                                        "Yeni belge açmadan önce bir sekmeyi kapatın.")
             return
         parola = None
         while True:
@@ -400,11 +458,14 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
                 yeni = Belge.ac(yol, parola)
                 break
             except ParolaGerekli as h:
+                if sessiz:
+                    return
                 parola, tamam = QInputDialog.getText(self, "Parola Gerekli", f"{h}\nParolayı girin:", QLineEdit.Password)
                 if not tamam:
                     return
             except BelgeHatasi as h:
-                QMessageBox.warning(self, APP_NAME, str(h))
+                if not sessiz:
+                    QMessageBox.warning(self, APP_NAME, str(h))
                 return
         self._durum_kaydet()
         if sira >= 0:   # yeniden yükleme: aynı sekmenin belgesi değişir
@@ -476,6 +537,15 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             yield
         finally:
             self._mesgul -= 1
+            if self._mesgul == 0 and self._bekleyen_yollar:
+                QTimer.singleShot(0, self._bekleyenleri_ac)
+
+    def _bekleyenleri_ac(self):
+        """İşlem sürerken gelen açma isteklerini (tek örnek, sürükle-bırak) şimdi açar."""
+        if self._mesgul or not self._bekleyen_yollar:
+            return
+        yollar, self._bekleyen_yollar = self._bekleyen_yollar, []
+        self.ac_coklu(yollar)
 
     def _etkinlestir(self, sira: int):
         """`sira`daki sekmeyi etkin yapar: eskinin durumunu saklar, yeni belgeyi görüntüleyiciye bağlar."""
@@ -513,6 +583,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._yazar = str(self.ayarlar.value("yazar", "") or os.environ.get("USERNAME", ""))
         self.gorunumu_yukle()
         self._son_menusu_doldur()
+        self._tek_ornek_ayarla()
         self.statusBar().showMessage("Ayarlar kaydedildi.", 3000)
 
     def _oturumu_sessiz_kapat(self, sira: int | None = None):
@@ -774,8 +845,11 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             if not self._kapatmaya_izin(sira):
                 olay.ignore()
                 return
+        self.oturumu_kaydet()
         while self._oturumlar:
             self._oturumu_sessiz_kapat(len(self._oturumlar) - 1)
+        if self.tek_ornek is not None:
+            self.tek_ornek.durdur()
         olay.accept()
 
     # --- son kullanılanlar ---

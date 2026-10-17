@@ -78,6 +78,16 @@ class AyarlarPenceresi(QDialog):
             self.arac.addItem(ad, kod)
         _kutu_sec(self.arac, str(a.value("arac", ARAC_EL)))
         form.addRow("Varsayılan araç:", self.arac)
+        self.tek_ornek = QCheckBox("Dosyaları çalışan pencerede sekme olarak aç (tek pencere)")
+        self.tek_ornek.setChecked(_dogru_mu(a.value("tek_ornek", True)))
+        self.tek_ornek.setToolTip("Açıksa, bir PDF'e çift tıklayınca ya da “Birlikte aç” deyince yeni pencere yerine "
+                                  "çalışan pencerede yeni sekme açılır.")
+        form.addRow("", self.tek_ornek)
+        self.oturum_geri = QCheckBox("Açılışta son oturumdaki sekmeleri geri yükle")
+        self.oturum_geri.setChecked(_dogru_mu(a.value("oturumu_geri_yukle", False)))
+        self.oturum_geri.setToolTip("Kapattığınızda açık olan belgeler bir sonraki açılışta yeniden açılır "
+                                    "(bulunamayan ve parolalı belgeler atlanır).")
+        form.addRow("", self.oturum_geri)
         temizle = QPushButton("Son kullanılanlar listesini temizle")
         temizle.clicked.connect(self._temizle_isaretle)
         self.temizle_etiketi = QLabel("")
@@ -182,6 +192,8 @@ class AyarlarPenceresi(QDialog):
         a.setValue("gorunum_sutun", 2 if self.cift.isChecked() else 1)
         a.setValue("gece", self.gece.isChecked())
         a.setValue("arac", self.arac.currentData())
+        a.setValue("tek_ornek", self.tek_ornek.isChecked())
+        a.setValue("oturumu_geri_yukle", self.oturum_geri.isChecked())
         a.setValue("donusum_klasoru", self.donusum.text().strip())
         if self.ocr_dil.currentData():
             a.setValue("ocr_dil", self.ocr_dil.currentData())
