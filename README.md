@@ -18,9 +18,7 @@ isteğe bağlı oturum geri yükleme). Ayrıntı: `surec.md`, özellik haritası
 Uygulama içi kılavuz: **Yardım → Nasıl Kullanılır** (kısayollar dahil).
 
 ## OCR dil verisi (yeni kurulumda bir kez)
-OCR motoru PyMuPDF'in içinde gelir; yalnızca dil verisi ayrı konur. `tur.traineddata` ve `eng.traineddata` dosyalarını
-(tessdata_fast, Apache-2.0: https://github.com/tesseract-ocr/tessdata_fast) `%APPDATA%\EaglePDF\tessdata` klasörüne kopyalayın.
-Yoksa uygulama OCR kullanılmak istendiğinde bu klasörü söyler. `tesseract.exe` gerekmez.
+OCR motoru PyMuPDF'in içinde gelir; yalnızca dil verisi ayrı kurulur. **OCR → Dil Verisi…** penceresinden Türkçe/İngilizce (ve diğer dilleri) indirebilir (onaylarsanız; yalnızca dil dosyası istenir, belge verisi gönderilmez) ya da elinizdeki `*.traineddata` dosyalarını ekleyebilirsiniz. Elle kurulum: dosyaları (tessdata_fast, Apache-2.0: https://github.com/tesseract-ocr/tessdata_fast) `%APPDATA%\EaglePDF\tessdata` klasörüne koyun. `tesseract.exe` gerekmez.
 
 ## Lisans
 Proje **GNU AGPL-3.0** (`LICENSE`), açık kaynak ve ticari amaçsız.

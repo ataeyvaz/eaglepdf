@@ -20,7 +20,7 @@ KATKILAR = [
     ("cryptography, uharfbuzz, lxml, aiohttp", "imza altyapısı (sertifika, yazı şekillendirme, XML, ağ)", "Apache-2.0 / BSD / MIT"),
     ("Tesseract OCR + tessdata_fast (tur, eng)", "metin tanıma (PyMuPDF içinde gelir; dil verisi ayrı)", "Apache-2.0"),
 ]
-GIZLILIK = "Tüm işlemler bu bilgisayarda yapılır; belgeleriniz hiçbir sunucuya gönderilmez."
+GIZLILIK = ("Tüm işlemler bu bilgisayarda yapılır; belgeleriniz hiçbir sunucuya gönderilmez. Tek ağ erişimi, siz istediğinizde OCR dil dosyasının indirilmesidir (yalnızca dosya istenir).")
 LISANS = f"{APP_NAME} açık kaynaktır (GNU AGPL-3.0). Ticari amaç taşımaz."
 
 

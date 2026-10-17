@@ -15,6 +15,7 @@ from ..core import iliskilendirme
 from ..core.belge import BelgeHatasi
 from .goruntuleyici import ARAC_EL, ARAC_SEC, MOD_SUREKLI, MOD_TEK
 from .ocr_arayuzu import dil_secenekleri
+from .ocr_veri_penceresi import OcrVeriPenceresi
 
 ACILIS_YAKINLASTIRMA = (("genislik", "Sayfa genişliğine sığdır"), ("sayfa", "Tam sayfayı sığdır"), ("yuzde100", "%100"))
 ARAC_SECENEKLERI = ((ARAC_EL, "El aracı (kaydır)"), (ARAC_SEC, "Metin seçme aracı"))
@@ -109,16 +110,30 @@ class AyarlarPenceresi(QDialog):
         satir.addWidget(goz)
         form.addRow("Dönüştürme çıktı klasörü:", satir)
         self.ocr_dil = QComboBox()
+        self._ocr_dil_doldur(str(a.value("ocr_dil", "tur+eng")))
+        form.addRow("OCR dili:", self.ocr_dil)
+        self.ocr_veri_dugme = QPushButton("OCR dil verisi… (indir / ekle / sil)")
+        self.ocr_veri_dugme.clicked.connect(self._ocr_veri_ac)
+        form.addRow("", self.ocr_veri_dugme)
+        return w
+
+    def _ocr_dil_doldur(self, secili: str):
+        """Dil kutusunu kurulu dillere göre (yeniden) doldurur; `secili` varsa onu seçer."""
+        self.ocr_dil.clear()
         secenekler = dil_secenekleri()
         for kod, ad in secenekler:
             self.ocr_dil.addItem(ad, kod)
+        self.ocr_dil.setEnabled(bool(secenekler))
         if not secenekler:
             self.ocr_dil.addItem("Dil verisi kurulu değil", "")
-            self.ocr_dil.setEnabled(False)
         else:
-            _kutu_sec(self.ocr_dil, str(a.value("ocr_dil", "tur+eng")))
-        form.addRow("OCR dili:", self.ocr_dil)
-        return w
+            _kutu_sec(self.ocr_dil, secili)
+
+    def _ocr_veri_ac(self):
+        """Dil Verisi penceresini açar; kapanınca kurulu diller değiştiyse dil kutusunu yeniler (seçim korunur)."""
+        onceki = self.ocr_dil.currentData() or "tur+eng"
+        OcrVeriPenceresi(self).exec()
+        self._ocr_dil_doldur(onceki)
 
     def _iliski_sekmesi(self) -> QWidget:
         w = QWidget()

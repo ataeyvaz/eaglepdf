@@ -77,6 +77,7 @@ def test_dil_verisi_yoksa_yonlendirir(pencere, tmp_path, monkeypatch):
     pencere.ac(str(tmp_path / "t.pdf"))
     monkeypatch.setattr(ocr_arayuzu, "dil_secenekleri", lambda: [])
     iletiler = []
-    monkeypatch.setattr(QMessageBox, "warning", staticmethod(lambda *a, **k: iletiler.append(a[2])))
+    # Davranış güncellendi (2026-10-17): eskiden yalnızca uyarıydı; şimdi Dil Verisi penceresini açmayı önerir
+    monkeypatch.setattr(QMessageBox, "question", staticmethod(lambda *a, **k: iletiler.append(a[2]) or QMessageBox.No))
     pencere.aranabilir_yap_ac()
-    assert iletiler and "traineddata" in iletiler[0]
+    assert iletiler and "traineddata" in iletiler[0] and "Dil Verisi penceresini" in iletiler[0]

@@ -87,3 +87,14 @@ def test_yardimda_bozuk_kacis_karakteri_yok(konular):
     assert "\t" not in ham
     assert not [c for c in ham if ord(c) < 32 and c not in "\n\r"]
     assert "\\tessdata" in konular["ocr"].govde   # OCR dil verisi yolu doğru yazılmış (ters eğik çizgi + tessdata)
+
+
+def test_ocr_dil_verisi_ve_gizlilik_agi_acikca_soyler(konular):
+    """Uygulamanın tek ağ erişimi (OCR dil dosyası indirme) yardımda ve gizlilik metinlerinde açıkça yazılı olmalı."""
+    ocr = konular["ocr"].govde
+    for beklenen in ("Dil Verisi…", "İndir…", "Dosyadan Ekle…", "gönderilmez", "doğrulan"):
+        assert beklenen in ocr, beklenen
+    gizlilik = konular["gizlilik"].govde
+    assert "ağ erişimi" in gizlilik and "dil dosyasının" in gizlilik and "kişisel veri gönderilmez" in gizlilik
+    from eaglepdf.ui.hakkinda import GIZLILIK
+    assert "ağ erişimi" in GIZLILIK and "OCR dil dosyasının indirilmesi" in GIZLILIK and "belgeleriniz hiçbir sunucuya gönderilmez" in GIZLILIK

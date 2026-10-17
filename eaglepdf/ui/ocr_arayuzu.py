@@ -9,16 +9,21 @@ from PySide6.QtWidgets import (QApplication, QComboBox, QDialog, QDialogButtonBo
                                QMenu, QMessageBox, QPlainTextEdit, QProgressDialog, QPushButton, QVBoxLayout)
 
 from .. import APP_NAME
-from ..core import ocr
+from ..core import ocr, ocr_veri
 from ..core.belge import BelgeHatasi, aralik_coz
+from .ocr_veri_penceresi import OcrVeriPenceresi
 
 IPUCLARI = {"ocr_bolge": "Metni çıkarılacak alanı sürükleyerek seçin; metin panoya kopyalanabilir."}
 DIL_SECENEKLERI = (("tur+eng", "Türkçe + İngilizce"), ("tur", "Yalnızca Türkçe"), ("eng", "Yalnızca İngilizce"))
 
 
 def dil_secenekleri() -> list[tuple[str, str]]:
-    """Dil verisi kurulu olan seçenekler."""
-    return [(kod, ad) for kod, ad in DIL_SECENEKLERI if ocr.hazir_mi(kod)]
+    """Dil verisi kurulu olan seçenekler: hazır Türkçe/İngilizce birleşimleri + kurulu diğer diller (tek başına)."""
+    secenekler = [(kod, ad) for kod, ad in DIL_SECENEKLERI if ocr.hazir_mi(kod)]
+    for kod in ocr.kullanilabilir_diller():
+        if kod not in ("tur", "eng"):
+            secenekler.append((kod, ocr_veri.dil_adi(kod)))
+    return secenekler
 
 
 class AranabilirPenceresi(QDialog):
@@ -100,17 +105,28 @@ class OcrArayuzu:
         self._arac_grubu.addAction(e)
         self._arac_eylemleri["ocr_bolge"] = e
         self._ek_ipuclari = {**getattr(self, "_ek_ipuclari", {}), **IPUCLARI}
+        self.e_ocr_veri = self._eylem("Dil Verisi…", self.ocr_veri_ac)   # belge açık olmasa da kullanılabilir
         self.m_ocr.addAction(self.e_aranabilir)
         self.m_ocr.addAction(e)
+        self.m_ocr.addSeparator()
+        self.m_ocr.addAction(self.e_ocr_veri)
         self._belge_eylemleri += [self.e_aranabilir, e]
 
     def _ocr_hazir_mi(self) -> bool:
         if dil_secenekleri():
             return True
-        QMessageBox.warning(
-            self, APP_NAME, "OCR için dil verisi bulunamadı.\n`tur.traineddata` (ve `eng.traineddata`) dosyalarını şu klasöre koyun:\n"
-                            f"{ocr.kullanici_tessdata()}\n\nAyrıntı için Yardım → Nasıl Kullanılır → OCR.")
-        return False
+        cevap = QMessageBox.question(
+            self, APP_NAME, "OCR için dil verisi bulunamadı (tur.traineddata / eng.traineddata).\n"
+                            f"Klasör: {ocr.kullanici_tessdata()}\n\n"
+                            "Dil Verisi penceresini açıp indirmek ya da dosyadan eklemek ister misiniz?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        if cevap == QMessageBox.Yes:
+            self.ocr_veri_ac()
+        return bool(dil_secenekleri())
+
+    def ocr_veri_ac(self):
+        """OCR → Dil Verisi…: kurulu dilleri gösterir; indirme/dosyadan ekleme/silme."""
+        OcrVeriPenceresi(self).exec()
 
     def aranabilir_yap_ac(self):
         b = self.belge

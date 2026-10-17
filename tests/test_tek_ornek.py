@@ -63,7 +63,7 @@ def sunucu(app, ad):
     s.durdur()
 
 
-def bekle(kosul, saniye=5.0):
+def bekle(kosul, saniye=20.0):   # yalnızca üst sınır: koşul sağlanınca hemen döner (yüklü makinede süreç başlatma yavaşlayabilir)
     bitis = time.time() + saniye
     while time.time() < bitis:
         QApplication.processEvents()
