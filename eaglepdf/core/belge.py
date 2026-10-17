@@ -131,6 +131,7 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         return belge
 
     def kapat(self):
+        self._gecmis.temizle()   # geri al belleğini bırak (genel bütçe)
         self._doc.close()
 
     # --- bilgi ---
@@ -281,6 +282,11 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         return bool(self._gecmis.geri)
 
     @property
+    def geri_al_bayti(self) -> int:
+        """Bu belgenin geri al/yinele görüntülerinin bellekte tuttuğu bayt."""
+        return self._gecmis.bayt()
+
+    @property
     def yinelenebilir_mi(self) -> bool:
         return bool(self._gecmis.ileri)
 
@@ -291,6 +297,7 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         veri, degisti = self._gecmis.geri.pop()
         belgeyi_degistir(self, veri)
         self.degisti = degisti
+        self._gecmis.denetle()
         return True
 
     def yinele(self) -> bool:
@@ -300,6 +307,7 @@ class Belge(OcrIslemleri, EkAciklamaIslemleri, DuzenlemeIslemleri):
         veri, _degisti = self._gecmis.ileri.pop()
         belgeyi_degistir(self, veri)
         self.degisti = True
+        self._gecmis.denetle()
         return True
 
     # --- kayıt ---

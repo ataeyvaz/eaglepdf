@@ -57,7 +57,7 @@ def test_acilis_yakinlastirma(pencere, tmp_path):
     pencere.ac(str(pdf_yap(tmp_path / "k.pdf", 1)))
     assert abs(pencere.goruntuleyici.olcek - 1.0) < 1e-6
     pencere.ayarlar.setValue("acilis_yakinlastirma", "genislik")
-    pencere.ac(str(pdf_yap(tmp_path / "k2.pdf", 1)), True)
+    pencere.ac(str(pdf_yap(tmp_path / "k2.pdf", 1)))
     assert abs(pencere.goruntuleyici.olcek - 1.0) > 1e-3
 
 

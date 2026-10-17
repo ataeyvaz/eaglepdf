@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from ..core.belge import Belge
 
 EN_COK_SEKME = 8
+BUYUK_BELGE_BAYT = 200 * 1024 * 1024   # bunun üstündeki dosyada bellek bilgisi gösterilir
 
 
 @dataclass
@@ -47,4 +48,6 @@ def sekme_ipucu(oturum: BelgeOturumu) -> str:
         parcalar.append("Kaydedilmemiş değişiklikler var")
     if oturum.belge.parola_korunur:
         parcalar.append("Parolayla korunuyor")
+    if oturum.belge.geri_alinabilir_mi:
+        parcalar.append(f"Geri al: {len(oturum.belge._gecmis.geri)} adım, {oturum.belge.geri_al_bayti / (1024 * 1024):.1f} MB")
     return "\n".join(parcalar)

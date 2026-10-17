@@ -23,7 +23,8 @@ from .koruma_arayuzu import KorumaArayuzu
 from .ayarlar_penceresi import AyarlarPenceresi
 from .imza_arayuzu import ImzaArayuzu
 from .sekme_cubugu import SekmeCubugu
-from .oturum import EN_COK_SEKME, BelgeOturumu, sekme_basligi, sekme_ipucu
+from ..core import gecmis as gecmis_modulu
+from .oturum import BUYUK_BELGE_BAYT, EN_COK_SEKME, BelgeOturumu, sekme_basligi, sekme_ipucu
 from .ozellikler_penceresi import OzelliklerPenceresi
 from .toplu_yazdir import TopluYazdirPenceresi, toplu_yazdir
 from .ocr_arayuzu import OcrArayuzu
@@ -359,10 +360,9 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         """`yol` zaten bir sekmede açıksa sırası, değilse -1."""
         return next((i for i, o in enumerate(self._oturumlar) if o.ayni_dosya_mi(yol)), -1)
 
-    def ac(self, yol, kontrol_edildi=False, yeniden=False):
+    def ac(self, yol, yeniden=False):
         """Dosyayı yeni sekmede açar; zaten açıksa o sekmeye geçer.
-        `yeniden=True`: açık sekmedeki belge diskten yeniden yüklenir (kayıttan sonra gibi). `kontrol_edildi` eski
-        çağrılarla uyum için bırakıldı, artık etkisi yok (açmak mevcut belgeyi kapatmaz)."""
+        `yeniden=True`: açık sekmedeki belge diskten yeniden yüklenir (kayıttan sonra gibi). Açmak mevcut belgeyi kapatmaz."""
         sira = self._oturum_bul(yol)
         if sira >= 0 and not yeniden:
             self._etkinlestir(sira)
@@ -399,6 +399,10 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         self._son_ekle(str(Path(yol)))
         self._oturumu_goster(self._oturumlar[self._etkin])
         self._acilis_yakinlastirma()
+        self.statusBar().clearMessage()   # önceki belgenin bilgi mesajı (ör. büyük belge) yenisinde kalmasın
+        boyut = Path(yol).stat().st_size
+        if boyut > BUYUK_BELGE_BAYT:
+            self.statusBar().showMessage(f"Büyük belge ({boyut // (1024 * 1024)} MB): bellek için geri al adımları sınırlanabilir.", 8000)
 
     # --- sekme geçişi ---
     def _durum_kaydet(self):
@@ -424,6 +428,7 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
     def _oturumu_goster(self, o: BelgeOturumu):
         """`o` oturumunu (zaten `_etkin`) görüntüleyici ve panellere bağlar; saklı sayfa/ölçek/arama/panel durumunu geri yükler."""
         self._bekleyen_islemi_iptal_et()
+        gecmis_modulu.etkin_ata(o.belge._gecmis)   # genel geri al bütçesi aşılınca önce diğer sekmelerden budanır
         self._geciste = True
         try:
             self._belge_goster(o.gecerli_sayfa)
@@ -508,10 +513,6 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             self._oturumu_goster(self._oturumlar[self._etkin])
         elif sira < self._etkin:
             self._etkin -= 1
-
-    def _belgeyi_kapat_sessiz(self):
-        """Etkin sekmeyi sormadan kapatır (uyumluluk adı)."""
-        self._oturumu_sessiz_kapat()
 
     def kapat(self):
         self._sekme_kapat(self._etkin)
@@ -740,7 +741,11 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
         return kutu.clickedButton() is atla
 
     def closeEvent(self, olay):
-        """Değişmiş sekmeleri sırayla sorar; biri 'Vazgeç' derse pencere kapanmaz."""
+        """Değişmiş sekmeleri sırayla sorar; biri 'Vazgeç' derse (ya da bir işlem sürüyorsa) pencere kapanmaz."""
+        if self._mesgul:
+            self.statusBar().showMessage("Bir işlem sürüyor; bitince pencereyi kapatabilirsiniz.", 3000)
+            olay.ignore()
+            return
         for sira in range(len(self._oturumlar)):
             if not self._kapatmaya_izin(sira):
                 olay.ignore()
