@@ -26,7 +26,7 @@ Planlı geliştirme bitti. Kalanlar üç grupta:
 - XMP güncelleme gerçek Acrobat/Word çıktılarıyla; görünür dijital imza kutusu başka okuyucularda (Acrobat) nasıl görünüyor.
 
 **B. Sonra çözülecek noktalar** (öneri sırası):
-1. Böl sonrası parçaları açma seçeneği. Sekmede kaydırma konumu (şimdi yalnızca sayfa+ölçek).
+1. Böl sonrası parçaları açma seçeneği. ~~Sekmede kaydırma konumu~~ ✅ (2026-10-17: `BelgeOturumu.kaydirma/duzen`, `Goruntuleyici.duzen_anahtari`; yalnızca ölçek/sayfa modu/sütun aynıysa geri yüklenir; yoksa sayfa).
 2. OCR: `tessdata_best` seçeneği, dil verisini uygulama içinden indirme/kurulum sihirbazı; döndürülmüş sayfalar; Word çıktısında taranmış sayfa düzeni.
 3. Dijital imza: kutuyu sürükleyerek yerleştirme, zaman damgası (RFC 3161)/LTV, Windows sertifika deposundan seçme, çizilmiş imza resmini kutuya koyma.
 4. Geri al bütçesini (400 MB) ve sekme sınırını (8) Ayarlar'a taşımak.

@@ -9,7 +9,7 @@
 {APP_NAME} birden çok belgeyi aynı pencerede, sekmelerle açar (en çok 8 belge).
 - **Açma:** Dosya → Aç (birden çok dosya seçilebilir), pencereye sürükle-bırak (birden çok PDF), Son Kullanılanlar, dönüştürme çıktıları. Aynı dosyayı yeniden açarsanız yeni sekme açılmaz, o sekmeye geçilir.
 - **Gezinme:** sekmeye tıklayın; **Ctrl+Tab / Ctrl+Shift+Tab** (ya da Ctrl+PgDn / Ctrl+PgUp) sonraki ve önceki sekmeye geçer (Görünüm menüsünde de var). Sekmeleri sürükleyerek sıralayabilirsiniz.
-- **Her sekme kendi durumunu hatırlar:** sayfa, yakınlaştırma, arama metni ve sonuçları, sol panel sekmesi ve **Geri Al geçmişi**. Yarım kalan resim/mühür yerleştirme, sekme değişince iptal olur.
+- **Her sekme kendi durumunu hatırlar:** sayfa ve sayfa içindeki kaydırma konumu, yakınlaştırma, arama metni ve sonuçları, sol panel sekmesi ve **Geri Al geçmişi**. Yarım kalan resim/mühür yerleştirme, sekme değişince iptal olur.
 - **Sekme başlığı:** dosya adı; başındaki **●** kaydedilmemiş değişiklik demektir, kilit simgesi parolalı belgeyi gösterir. Üzerine gelince tam yol ve Geri Al belleği görünür.
 - **Kapatma:** sekmedeki ✕, orta tuşla tıklama ya da **Ctrl+W**. Sağ tık menüsü: *Kapat, Diğerlerini Kapat, Tümünü Kapat, Yolu Kopyala, Klasörde Göster*. **Dosya → Tümünü Kapat** (Ctrl+Shift+W). Değişmiş belgede kaydetmek isteyip istemediğiniz sorulur; “Vazgeç” işlemi orada durdurur. Pencereyi kapatırken tüm değişmiş sekmeler sırayla sorulur.
 - **Çakışma koruması:** başka bir sekmede açık olan bir dosyanın üzerine *Farklı Kaydet*, *Birleştir* ya da *Sayfaları Çıkar* ile yazılamaz; önce o sekmeyi kapatın ya da başka bir ad seçin. Birleştirme, sayfa çıkarma ve imzalı kopya bitince sonucu açmak isteyip istemediğiniz sorulur.

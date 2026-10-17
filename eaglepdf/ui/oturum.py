@@ -23,6 +23,8 @@ class BelgeOturumu:
     arama_no: int = -1
     arama_acik: bool = False   # bul çubuğu görünür mü
     panel_sekmesi: int = 0   # 0 küçük resimler, 1 yer imleri
+    kaydirma: int = 0        # görüntüleyicinin dikey kaydırma değeri (sayfa içi konum)
+    duzen: tuple = ()        # kaydırmanın alındığı düzen anahtarı; boşsa (yeni sekme) geri yüklenmez
 
     def ayni_dosya_mi(self, yol) -> bool:
         """Oturumun belgesi `yol` ile aynı dosya mı? (Windows: büyük/küçük harf duyarsız, çözümlenmiş yol.)"""

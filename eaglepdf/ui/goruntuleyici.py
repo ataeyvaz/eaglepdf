@@ -264,6 +264,11 @@ class Goruntuleyici(QScrollArea):
     def olcek(self) -> float:
         return self._olcek
 
+    @property
+    def duzen_anahtari(self) -> tuple:
+        """Kaydırma değerinin anlamını belirleyen düzen (ölçek, sayfa modu, sütun sayısı). Aynıysa saklı kaydırma geçerlidir."""
+        return (round(self._olcek, 4), self._mod, self._sutun)
+
     def olcek_ata(self, olcek: float):
         olcek = max(EN_AZ_OLCEK, min(EN_COK_OLCEK, olcek))
         if abs(olcek - self._olcek) < 1e-4:

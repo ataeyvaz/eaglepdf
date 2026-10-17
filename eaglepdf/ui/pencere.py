@@ -495,6 +495,8 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             o = self._oturumlar[self._etkin]
             o.gecerli_sayfa = self.goruntuleyici.gecerli_sayfa
             o.olcek = self.goruntuleyici.olcek
+            o.kaydirma = self.goruntuleyici.verticalScrollBar().value()
+            o.duzen = self.goruntuleyici.duzen_anahtari
             o.arama_metni = self.bul_kutu.text()
             o.arama_sonuclari, o.arama_no = list(self._sonuclar), self._sonuc_no
             o.arama_acik = self.bul_cubugu.isVisible()
@@ -517,6 +519,8 @@ class AnaPencere(ImzaArayuzu, OcrArayuzu, KorumaArayuzu, DonusumArayuzu, Duzenle
             self._belge_goster(o.gecerli_sayfa)
             if abs(self.goruntuleyici.olcek - o.olcek) > 1e-4:
                 self.goruntuleyici.olcek_ata(o.olcek)
+            if o.duzen and o.duzen == self.goruntuleyici.duzen_anahtari:   # düzen aynıysa sayfa içi konumu da döndür
+                self.goruntuleyici.verticalScrollBar().setValue(o.kaydirma)
             self.bul_kutu.blockSignals(True)   # metni geri yazmak yeni arama başlatmasın
             self.bul_kutu.setText(o.arama_metni)
             self.bul_kutu.blockSignals(False)
